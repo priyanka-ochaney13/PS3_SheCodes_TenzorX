@@ -4,3 +4,10 @@ soundfile
 groq
 elevenlabs
 python-dotenv
+fastapi
+uvicorn
+deepface
+easyocr
+pdf2image
+opencv-python
+pydantic
