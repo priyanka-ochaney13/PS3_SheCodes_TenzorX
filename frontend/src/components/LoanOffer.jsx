@@ -1,6 +1,6 @@
 // src/components/LoanOffer.jsx
 // Final screen shown after the call — displays loan offer or rejection
-export default function LoanOffer({ result }) {
+export default function LoanOffer({ result, onStartNew }) {
   const approved = result?.status === "approved";
 
   return (
@@ -43,6 +43,16 @@ export default function LoanOffer({ result }) {
               You may re-apply after 30 days or contact our support team for assistance.
             </p>
           </>
+        )}
+
+        {/* Start new application link */}
+        {onStartNew && (
+          <button
+            onClick={onStartNew}
+            style={{ ...styles.btn, background:"transparent", border:"1px solid rgba(255,255,255,0.1)", color:"#777", marginTop: 16, fontSize:13 }}
+          >
+            ← Start a New Application
+          </button>
         )}
       </div>
     </div>
