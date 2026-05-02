@@ -2,8 +2,7 @@ from transaction_agent.pdf_tamper_detector import detect_pdf_tampering
 from transaction_agent.statement_parser import parse_bank_statement
 from transaction_agent.feature_engineer import engineer_features
 from transaction_agent.xgboost_scorer import score_fraud
-from fraud_detector.fraud_detector_agent import fraud_detector_agent
-
+from fraud_detector_agent import fraud_detector_agent
 def run_test(pdf_path, stated_income, loan_type, applicant_id, test_name, password=None):
     print("=" * 50)
     print(f"TEST — {test_name}")
@@ -84,5 +83,5 @@ run_test(
     loan_type="personal_loan_salaried",
     applicant_id="TEST_003",
     test_name="ICICI REAL STATEMENT",
-    password="aliz0701"  # pass password directly here
+    password=""  # pass password directly here
 )
