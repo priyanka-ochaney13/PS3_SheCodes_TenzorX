@@ -18,10 +18,10 @@ import sys
 # Make sure agents folder is on the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "agents"))
 
-from pdf_tamper_detector import detect_pdf_tampering
-from statement_parser    import parse_bank_statement
-from feature_engineer    import engineer_features
-from xgboost_scorer      import score_fraud
+from agents.pdf_tamper_detector import detect_pdf_tampering
+from agents.statement_parser    import parse_bank_statement
+from agents.feature_engineer    import engineer_features
+from agents.xgboost_scorer      import score_fraud
 
 
 def run_transaction_pipeline(

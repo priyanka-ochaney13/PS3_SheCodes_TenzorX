@@ -50,7 +50,7 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
     # ── Extractor ─────────────────────────────────────────
     if not session.extractor_output:
         try:
-            from extractor_agent import ExtractorAgent
+            from agents.extractor_agent import ExtractorAgent
             agent  = ExtractorAgent(
                 transcript_output  = session.speech_output,
                 transaction_output = session.transaction_output,
@@ -74,7 +74,7 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
     # ── Fraud Detector ────────────────────────────────────
     if not session.fraud_output:
         try:
-            from fraud_detector_agent import fraud_detector_agent
+            from agents.fraud_detector_agent import fraud_detector_agent
 
             speech      = session.speech_output or {}
             deepface    = session.deepface_output or {}
@@ -163,7 +163,7 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
     # ── Policy Agent ──────────────────────────────────────
     if not session.policy_output:
         try:
-            from policy_agent import PolicyAgent
+            from agents.policy_agent import PolicyAgent
             agent  = PolicyAgent(
                 loan_schema        = session.extractor_output.get("loan_schema", {}),
                 deepface_output    = session.deepface_output or {},
@@ -185,7 +185,7 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
     # ── Risk Scorer ───────────────────────────────────────
     if not session.risk_output:
         try:
-            from risk_agent import (
+            from agents.risk_agent import (
                 calculate_risk, RiskRequest,
                 LoanSchema       as RiskLoanSchema,
                 DeepFaceOutput   as RiskDeepFaceOutput,
@@ -242,7 +242,7 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
     # ── Offer Engine ──────────────────────────────────────
     if not session.offer_output:
         try:
-            from offer_agent import (
+            from agents.offer_agent import (
                 generate_offer, OfferRequest,
                 LoanSchema    as OfferLoanSchema,
                 PolicyOutput  as OfferPolicyOutput,

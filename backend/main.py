@@ -11,6 +11,12 @@ All agent outputs are stored as JSON in the loan_sessions DB table.
 No JSON files are written to disk — the DB is the message bus between agents.
 """
 
+import sys
+import os
+
+# Add the parent directory to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
