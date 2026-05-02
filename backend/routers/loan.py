@@ -279,7 +279,7 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
                 policy_output = OfferPolicyOutput(
                     status               = policy.get("status", "eligible"),
                     max_eligible_amount  = int(policy.get("max_eligible_amount", 0)),
-                    recommended_product  = policy.get("recommended_product", "personal_loan"),
+                    recommended_product  = policy.get("recommended_product") or "personal_loan",
                     eligible_products    = eligible_products,
                 ),
                 risk_output = OfferRiskOutput(

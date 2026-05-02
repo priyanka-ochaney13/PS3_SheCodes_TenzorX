@@ -42,7 +42,7 @@ class SessionStatusResponse(BaseModel):
     risk_score:          Optional[int]
     approved_amount:     Optional[int]
     interest_rate:       Optional[float]
-    recommended_product: Optional[str]
+    recommended_product: Optional[str] = None
     consent_given:       bool
     agents_completed:    List[str]
 
