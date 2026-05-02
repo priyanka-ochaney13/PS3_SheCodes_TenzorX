@@ -44,7 +44,7 @@ POLICY_RULES = {
     "instant_loan_min":               50000,   # ₹50K
     "instant_loan_max":               500000,  # ₹5 lakhs
     "personal_min_work_exp_months":   12,      # 1 year total
-    "personal_cibil_recommended":     750,
+    "personal_cibil_recommended":     650,
 
     # Business Loan
     "business_min_age":               24,
@@ -134,7 +134,7 @@ LOAN_PRODUCTS = {
         "purposes":    ["personal", "professional", "clinic", "equipment",
                         "office", "education", "medical", None],
         "employment":  ["professional"],
-        "cibil_min":   700,
+        "cibil_min":   650,
         "notes":       "For CA, CS, Doctors, Lawyers, Architects. Certificate of Practice required.",
     },
     "gold_loan": {
@@ -329,7 +329,7 @@ class PolicyAgent:
 
             # Purpose check — only if specified and product has purpose restriction
             if purpose and product.get("purposes") is not None:
-                if not any(p and p in purpose for p in product["purposes"]):
+                if not any(purpose in p if p else False for p in product["purposes"]):
                     reasons_blocked.append(f"purpose '{purpose}' not matched")
 
             # Amount range check — only if requested amount specified
@@ -349,6 +349,8 @@ class PolicyAgent:
             # CIBIL check
             if cibil is not None and product["cibil_min"] > 0 and cibil < product["cibil_min"]:
                 reasons_blocked.append(f"CIBIL {cibil} < required {product['cibil_min']}")
+
+            print(f"  {product_key}: blocked_by={reasons_blocked}")
 
             if not reasons_blocked:
                 eligible.append({
