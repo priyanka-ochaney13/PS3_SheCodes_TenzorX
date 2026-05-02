@@ -1,4 +1,4 @@
-import base64, cv2, numpy as np, re, traceback
+import base64, cv2, numpy as np, re, traceback, os, uuid as _uuid, shutil
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from deepface import DeepFace
@@ -17,6 +17,12 @@ app.add_middleware(
 
 reader = easyocr.Reader(['en'], gpu=False)
 print("🚀 OCR Ready")
+
+# -------- TEMP DIR HELPER (for concurrent request isolation) --------
+def get_tmp_dir():
+    d = f"/tmp/deepface_{_uuid.uuid4().hex}"
+    os.makedirs(d, exist_ok=True)
+    return d
 
 # ---------------- SAVE FILE ----------------
 def save_file(data, path):
@@ -126,6 +132,85 @@ def extract_pan(text):
 
     print("❌ PAN NOT FOUND")
     return "Not Found", "❌ Invalid PAN"
+
+# -------- COMBINED KYC ENDPOINT (race-condition safe) --------
+@app.post("/process_kyc_full")
+async def process_kyc_full(req: Request):
+    """Single endpoint replacing verify_docs + process_kyc two-step.
+    Fully isolated per request — no shared file state."""
+    tmp = get_tmp_dir()
+    try:
+        data = await req.json()
+        ref_path = f"{tmp}/ref.jpg"
+        live_path = f"{tmp}/live.jpg"
+        aad_path = f"{tmp}/aad.jpg"
+        pan_path = f"{tmp}/pan.jpg"
+        ref_face_path = f"{tmp}/ref_face.jpg"
+        live_face_path = f"{tmp}/live_face.jpg"
+
+        save_file(data['photo'], ref_path)
+        save_file(data['image'], live_path)
+        save_file(data.get('aadhaar', data['photo']), aad_path)
+        save_file(data.get('pan', data['photo']), pan_path)
+
+        # OCR
+        aad_text = get_text(cv2.imread(aad_path))
+        pan_text = get_text(cv2.imread(pan_path))
+        aad_no, aad_status, ver = extract_aadhaar(aad_text)
+        pan_no, pan_status = extract_pan(pan_text)
+
+        # Face extraction
+        live_faces = DeepFace.extract_faces(
+            img_path=live_path,
+            detector_backend="retinaface",
+            enforce_detection=False
+        )
+        ref_faces = DeepFace.extract_faces(
+            img_path=ref_path,
+            detector_backend="retinaface",
+            enforce_detection=False
+        )
+
+        if not live_faces or not ref_faces:
+            return {
+                "verified": False, "status": "No face detected",
+                "distance": None, "score": None,
+                "aadhaar": aad_no, "pan": pan_no, "verhoeff": ver,
+                "aadhaar_status": aad_status, "pan_status": pan_status,
+            }
+
+        cv2.imwrite(live_face_path, cv2.cvtColor((live_faces[0]['face'] * 255).astype("uint8"), cv2.COLOR_RGB2BGR))
+        cv2.imwrite(ref_face_path, cv2.cvtColor((ref_faces[0]['face'] * 255).astype("uint8"), cv2.COLOR_RGB2BGR))
+
+        result = DeepFace.verify(
+            img1_path=live_face_path,
+            img2_path=ref_face_path,
+            model_name="Facenet512",
+            enforce_detection=False
+        )
+        distance = result["distance"]
+        score = round(1 - distance, 3)
+
+        if distance < 0.45:
+            status, verified = "✅ Face Matched (High Confidence)", True
+        elif distance < 0.65:
+            status, verified = "⚠️ Face Probably Matched (Low Confidence)", True
+        else:
+            status, verified = "❌ Face Not Matched", False
+
+        return {
+            "verified": verified, "status": status,
+            "distance": round(distance, 3), "score": score,
+            "aadhaar": aad_no, "aadhaar_status": aad_status, "verhoeff": ver,
+            "pan": pan_no, "pan_status": pan_status,
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        return {"verified": False, "status": f"❌ Error: {str(e)}",
+                "distance": None, "score": None}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 # ---------------- VERIFY DOCS ----------------
 @app.post("/verify_docs")
@@ -261,4 +346,4 @@ async def process_kyc(req: Request):
         }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8001)

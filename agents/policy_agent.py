@@ -30,8 +30,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OUTPUT_PATH = "policy_output.json"
-
 # ── Poonawalla Fincorp Lending Policy Rules ───────────────
 # Source: poonawallafincorp.com official product guidelines
 POLICY_RULES = {
@@ -448,10 +446,6 @@ class PolicyAgent:
             "requested_amount":     self.schema.get("requested_amount"),
         }
 
-        with open(OUTPUT_PATH, "w") as f:
-            json.dump(output, f, indent=2)
-
-        print(f"\n✅ Policy agent done → {OUTPUT_PATH}")
         print(f"   Status: {status.upper()} | Eligible products: {len(eligible_products)}")
         if eligible_products:
             print(f"   Recommended: {recommended_product} | Max eligible: ₹{max_eligible_amount:,}")

@@ -5,31 +5,8 @@ Responsibilities:
   1. Take the full conversation transcript from the speech agent
   2. Take verified financial data from the transaction agent
   3. Use Groq LLaMA (llama-3.3-70b-versatile) to extract a structured loan application schema
-  4. Save result to extractor_output.json
 
 Uses Groq API (free) instead of Anthropic — same prompt, same output.
-
-Output (extractor_output.json):
-{
-  "agent": "extractor",
-  "status": "completed",
-  "loan_schema": {
-    "customer_name": "...",
-    "loan_purpose": "...",
-    "requested_amount": 500000,
-    "monthly_income": 45000,
-    "existing_emis": 5000,
-    "employment_type": "salaried",
-    "loan_tenure_preference": 36,
-    "city": "Mumbai",
-    "credit_score_self_reported": 760,
-    "has_gold_assets": false,
-    "owns_property": false,
-    "business_vintage_months": null,
-    "consent_given": true,
-    "additional_notes": "..."
-  }
-}
 """
 
 import os
@@ -39,8 +16,6 @@ from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
-
-OUTPUT_PATH = "extractor_output.json"
 
 SYSTEM_PROMPT = """You are a loan application data extractor for an Indian fintech company (Poonawalla Fincorp).
 You will receive a conversation transcript between a loan onboarding agent and a customer,
@@ -86,24 +61,39 @@ Rules:
 
 class ExtractorAgent:
     def __init__(self, transcript_output: dict, transaction_output: dict):
-        self.transcript    = transcript_output
-        self.transaction   = transaction_output
-        self.groq_client   = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        self.transcript  = transcript_output
+        self.transaction = transaction_output
+        self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     def build_prompt(self) -> str:
         full_transcript = self.transcript.get("full_transcript", "No transcript available.")
 
-        monthly_income   = self.transaction.get("monthly_income", "Unknown")
-        avg_balance      = self.transaction.get("average_monthly_balance", "Unknown")
-        dti_ratio        = self.transaction.get("dti_ratio", "Unknown")
-        foir             = self.transaction.get("foir", "Unknown")
-        risk_level       = self.transaction.get("risk_level", "Unknown")
-        risk_flags       = self.transaction.get("risk_flags", [])
-        income_rel       = self.transaction.get("income_reliability", "Unknown")
-        period_months    = self.transaction.get("statement_period_months", "Unknown")
-        recurring_emis   = self.transaction.get("recurring_emis_detected", [])
+        # ── Sanitize every field — never let None reach an f-string formatter ──
+        monthly_income = self.transaction.get("monthly_income")
+        try:
+            monthly_income = int(monthly_income) if monthly_income is not None else 0
+        except (ValueError, TypeError):
+            monthly_income = 0
 
-        total_recurring_emi = sum(r.get("amount", 0) for r in recurring_emis) if recurring_emis else 0
+        avg_balance   = self.transaction.get("average_monthly_balance") or "Unknown"
+        dti_ratio     = self.transaction.get("dti_ratio") or "Unknown"
+        foir          = self.transaction.get("foir") or "Unknown"
+        risk_level    = self.transaction.get("risk_level") or "Unknown"
+        risk_flags    = self.transaction.get("risk_flags") or []
+        income_rel    = self.transaction.get("income_reliability") or "Unknown"
+        period_months = self.transaction.get("statement_period_months") or "Unknown"
+        recurring_emis = self.transaction.get("recurring_emis_detected") or []
+
+        total_recurring_emi = 0
+        for r in recurring_emis:
+            val = r.get("amount")
+            if val is not None:
+                try:
+                    total_recurring_emi += float(val)
+                except (ValueError, TypeError):
+                    pass
+
+        fraud_signals = self.transcript.get("fraud_signals") or []
 
         financial_summary = f"""
 Verified Bank Statement Analysis:
@@ -117,14 +107,15 @@ Verified Bank Statement Analysis:
 - Risk Level: {risk_level}
 - Risk Flags from Bank Analysis: {', '.join(risk_flags) if risk_flags else 'None'}
 
-Conversation Fraud Signals (from speech agent): {', '.join(self.transcript.get('fraud_signals', [])) or 'None'}
-""" if isinstance(monthly_income, (int, float)) else f"""
-Verified Bank Statement Analysis:
-- Monthly Income: {monthly_income}
-- DTI Ratio: {dti_ratio}
-- Risk Level: {risk_level}
-- Risk Flags: {', '.join(risk_flags) if risk_flags else 'None'}
+Conversation Fraud Signals (from speech agent): {', '.join(fraud_signals) if fraud_signals else 'None'}
 """
+
+        income_note = (
+            f"Remember: use verified bank income (₹{monthly_income:,}) for monthly_income, "
+            f"not whatever the customer stated."
+            if monthly_income > 0
+            else "Note: Bank income data unavailable — use customer-stated income."
+        )
 
         return f"""Below is the complete loan onboarding conversation transcript followed by verified bank statement data.
 
@@ -133,7 +124,7 @@ Conversation Transcript:
 
 {financial_summary}
 
-Extract the complete loan application schema from the above. Remember: use verified bank income (₹{monthly_income:,}) for monthly_income, not whatever the customer stated."""
+Extract the complete loan application schema from the above. {income_note}"""
 
     def run(self) -> dict:
         print("🤖 Extractor Agent running with Groq LLaMA (llama-3.3-70b-versatile)...")
@@ -147,11 +138,10 @@ Extract the complete loan application schema from the above. Remember: use verif
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": prompt},
                 ],
-                temperature=0.05,   # near-deterministic for schema extraction
+                temperature=0.05,
                 max_tokens=1024,
             )
             raw = response.choices[0].message.content.strip()
-            # Strip markdown fences if model adds them
             raw = re.sub(r"```json|```", "", raw).strip()
 
             try:
@@ -160,7 +150,6 @@ Extract the complete loan application schema from the above. Remember: use verif
             except json.JSONDecodeError as e:
                 print(f"⚠️  JSON parse error: {e}")
                 print(f"   Raw response: {raw[:300]}")
-                # Attempt to extract JSON from within the response
                 json_match = re.search(r"\{.*\}", raw, re.DOTALL)
                 if json_match:
                     try:
@@ -184,13 +173,17 @@ Extract the complete loan application schema from the above. Remember: use verif
             "loan_schema": loan_schema,
         }
 
-        with open(OUTPUT_PATH, "w") as f:
-            json.dump(output, f, indent=2)
-
-        print(f"\n✅ Extractor agent done → {OUTPUT_PATH}")
         if status == "completed":
-            schema = loan_schema
-            print(f"   Name: {schema.get('customer_name')} | Purpose: {schema.get('loan_purpose')} | Amount: ₹{schema.get('requested_amount', 0):,}")
+            schema  = loan_schema
+            raw_amt = schema.get("requested_amount")
+            try:
+                amt = float(raw_amt) if raw_amt is not None else 0.0
+            except (ValueError, TypeError):
+                amt = 0.0
+            print(f"   Name: {schema.get('customer_name')} | "
+                  f"Purpose: {schema.get('loan_purpose')} | "
+                  f"Amount: ₹{amt:,.0f}")
+
         return output
 
 

@@ -1,17 +1,5 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-
-app = FastAPI()
-
-# CORS (frontend connect)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # ---------------- INPUT SCHEMA ----------------
 
@@ -83,9 +71,8 @@ def calculate_emi(P, rate, n):
     }
 
 
-# ---------------- MAIN API ----------------
+# ---------------- MAIN LOGIC ----------------
 
-@app.post("/generate-offer")
 def generate_offer(data: OfferRequest):
 
     risk = data.risk_output
@@ -149,10 +136,3 @@ def generate_offer(data: OfferRequest):
         "risk_score": risk.risk_score,
         "risk_level": risk.risk_level
     }
-
-
-# ---------------- RUN ----------------
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)

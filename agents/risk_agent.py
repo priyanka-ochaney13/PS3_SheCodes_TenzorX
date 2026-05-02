@@ -1,17 +1,5 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # ---------------- INPUT SCHEMA ----------------
 
@@ -163,25 +151,3 @@ def calculate_risk(data: RiskRequest):
         "breakdown": breakdown,
         "raw_score": score
     }
-# ---------------- API ----------------
-
-@app.post("/risk-score")
-def risk_score(request: RiskRequest):
-
-    result = calculate_risk(request)
-
-    print("\n================ RISK REPORT ================")
-    print(result)
-
-    return {
-        "agent": "risk_scorer",
-        "status": "completed",
-        **result
-    }
-
-
-# ---------------- RUN ----------------
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
