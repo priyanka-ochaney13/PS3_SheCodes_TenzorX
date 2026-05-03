@@ -1,6 +1,6 @@
 // src/components/FraudRejected.jsx — Poonawalla navy+white theme
 const NAVY   = "#001840";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 
 export default function FraudRejected({ signals = [], weight = null, onTryAgain }) {
   return (

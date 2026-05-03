@@ -1,6 +1,6 @@
 // src/components/ErrorScreen.jsx — generic fallback error screen
 const NAVY   = "#001840";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 
 export default function ErrorScreen({ message, onRetry, onHome }) {
   return (

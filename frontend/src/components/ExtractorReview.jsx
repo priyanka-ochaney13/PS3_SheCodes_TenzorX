@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import api from "../services/api";
 
 const NAVY   = "#001840";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 
 const LOAN_PURPOSE_LABELS = {
   "home purchase": "Home Purchase", "home renovation": "Home Renovation",
@@ -220,8 +220,8 @@ const s = {
   card:    { background: "#fff", borderRadius: 20, padding: "36px 32px", width: "100%", maxWidth: 580, boxShadow: "0 4px 24px rgba(0,0,0,0.08)", height: "fit-content" },
   center:  { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "40px 0" },
   header:  { display: "flex", gap: 16, alignItems: "flex-start", marginBottom: 28, paddingBottom: 20, borderBottom: "1px solid #f0f4f8" },
-  headerIcon: { width: 48, height: 48, borderRadius: 12, background: "rgba(232,80,10,0.08)", border: "1px solid rgba(232,80,10,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 },
-  disclaimer: { background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "12px 16px", marginBottom: 24, fontSize: 12, color: "#c2410c", lineHeight: 1.6 },
+  headerIcon: { width: 48, height: 48, borderRadius: 12, background: "rgba(26,86,219,0.08)", border: "1px solid rgba(26,86,219,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 },
+  disclaimer: { background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "12px 16px", marginBottom: 24, fontSize: 12, color: "#1a56db", lineHeight: 1.6 },
   btnRow:  { display: "flex", gap: 12 },
   btnPrimary: { flex: 1, padding: 14, borderRadius: 10, border: "none", background: ORANGE, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Segoe UI', sans-serif" },
   btnBack: { padding: "14px 20px", borderRadius: 10, border: "1px solid #e8ecf0", background: "#fff", color: "#888", fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "'Segoe UI', sans-serif" },

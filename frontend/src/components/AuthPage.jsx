@@ -51,9 +51,9 @@ export default function AuthPage({ onAuth }) {
       <style>{`
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         @keyframes spin   { to { transform: rotate(360deg); } }
-        .auth-input:focus { border-color: #E8500A !important; outline: none; }
+        .auth-input:focus { border-color: #1a56db !important; outline: none; }
         .auth-tab:hover   { color: #fff !important; }
-        .auth-btn:hover   { background: #c7420a !important; transform: translateY(-1px); }
+        .auth-btn:hover   { background: #1a56db !important; transform: translateY(-1px); }
         .social-btn:hover { background: rgba(255,255,255,0.08) !important; }
       `}</style>
 
@@ -242,7 +242,7 @@ const fStyle = {
 };
 
 const NAVY   = "#001840";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 
 const s = {
   page: {
@@ -272,8 +272,8 @@ const s = {
     width:          64,
     height:         64,
     borderRadius:   16,
-    background:     `rgba(232,80,10,0.15)`,
-    border:         `1px solid rgba(232,80,10,0.3)`,
+    background:     `rgba(26,86,219,0.15)`,
+    border:         `1px solid rgba(26,86,219,0.3)`,
     display:        "flex",
     alignItems:     "center",
     justifyContent: "center",
@@ -300,8 +300,8 @@ const s = {
   featureText: { color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 1.4 },
   trustBadges: { display: "flex", gap: 8, flexWrap: "wrap" },
   badge: {
-    background:   "rgba(232,80,10,0.15)",
-    border:       "1px solid rgba(232,80,10,0.3)",
+    background:   "rgba(26,86,219,0.15)",
+    border:       "1px solid rgba(26,86,219,0.3)",
     borderRadius: 99,
     padding:      "4px 12px",
     fontSize:     11,
@@ -368,8 +368,8 @@ const s = {
   },
 
   errorBox: {
-    background:   "rgba(232,80,10,0.07)",
-    border:       "1px solid rgba(232,80,10,0.2)",
+    background:   "rgba(26,86,219,0.07)",
+    border:       "1px solid rgba(26,86,219,0.2)",
     borderRadius: 8,
     padding:      "10px 14px",
     fontSize:     13,

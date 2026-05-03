@@ -8,7 +8,7 @@ import { useState } from "react";
 import api from "../services/api";
 
 const NAVY   = "#001840";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 const BG     = "#f0f4f8";
 
 const LOAN_TYPES = [
@@ -136,9 +136,9 @@ export default function PreCallForm({ user, onStartCall, onBack }) {
     <div style={s.page}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        .pf-input:focus  { border-color: ${ORANGE} !important; outline: none; box-shadow: 0 0 0 3px rgba(232,80,10,0.1); }
+        .pf-input:focus  { border-color: ${ORANGE} !important; outline: none; box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
         .pf-file:hover   { border-color: ${ORANGE} !important; background: #fff8f5 !important; }
-        .pf-primary:hover{ background: #c7420a !important; transform: translateY(-1px); }
+        .pf-primary:hover{ background: #1a56db !important; transform: translateY(-1px); }
         .pf-back:hover   { background: #e8ecf0 !important; }
       `}</style>
 
@@ -411,7 +411,7 @@ function UploadField({ label, accept, file, onChange, hint, required }) {
 function ErrorBox({ msg }) {
   return (
     <div style={{
-      background: "rgba(232,80,10,0.07)", border: "1px solid rgba(232,80,10,0.25)",
+      background: "rgba(26,86,219,0.07)", border: "1px solid rgba(26,86,219,0.25)",
       borderRadius: 8, padding: "10px 14px", fontSize: 13, color: ORANGE, marginBottom: 16,
     }}>
       ⚠️ {msg}
@@ -465,8 +465,8 @@ const s = {
     border: "1.5px dashed #dde2e8", cursor: "pointer", transition: "all 0.2s",
   },
   reqBanner: {
-    background: "rgba(232,80,10,0.06)", border: "1px solid rgba(232,80,10,0.18)",
-    borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#c14008",
+    background: "rgba(26,86,219,0.06)", border: "1px solid rgba(26,86,219,0.18)",
+    borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#1a56db",
     marginBottom: 20, fontWeight: 500,
   },
   uploadingRow: {
@@ -492,7 +492,7 @@ const s = {
   sidebar: { width: 260, flexShrink: 0 },
   sideNum: {
     width: 20, height: 20, borderRadius: "50%",
-    background: "rgba(232,80,10,0.1)", border: "1px solid rgba(232,80,10,0.2)",
+    background: "rgba(26,86,219,0.1)", border: "1px solid rgba(26,86,219,0.2)",
     display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: 10, fontWeight: 700, color: ORANGE, flexShrink: 0, marginTop: 1,
   },

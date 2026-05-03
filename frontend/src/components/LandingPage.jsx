@@ -1,10 +1,10 @@
 // src/components/LandingPage.jsx — Poonawalla Fincorp full redesign
-// Navy #001840, Orange #E8500A, White background
+// Navy #001840, Orange #1a56db, White background
 import { useState, useEffect } from "react";
 
 const NAVY   = "#001840";
 const NAVY2  = "#003087";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 const BG     = "#f0f4f8";
 
 const LOAN_TYPES = [
@@ -118,7 +118,7 @@ export default function LandingPage({ user, onGetStarted, onLogout }) {
       <style>{`
         @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulse  { 0%,100%{opacity:.6;} 50%{opacity:1;} }
-        .hero-cta:hover   { background: #c7420a !important; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(232,80,10,0.35) !important; }
+        .hero-cta:hover   { background: #1a56db !important; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(26,86,219,0.35) !important; }
         .lt-card:hover    { border-color: ${ORANGE} !important; transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important; }
         .nav-link:hover   { color: ${ORANGE} !important; }
         .ghost-btn:hover  { background: rgba(255,255,255,0.12) !important; }
@@ -185,7 +185,7 @@ export default function LandingPage({ user, onGetStarted, onLogout }) {
         <div style={{ ...s.heroCard, animation: visible ? "fadeUp 0.6s ease 0.2s both" : "none" }}>
           <div style={s.heroCardHeader}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(232,80,10,0.2)", border: "1px solid rgba(232,80,10,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(26,86,219,0.2)", border: "1px solid rgba(26,86,219,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 🎥
               </div>
               <div>
@@ -215,7 +215,7 @@ export default function LandingPage({ user, onGetStarted, onLogout }) {
             ))}
           </div>
 
-          <div style={{ background: "rgba(232,80,10,0.1)", border: "1px solid rgba(232,80,10,0.25)", borderRadius: 12, padding: "16px" }}>
+          <div style={{ background: "rgba(26,86,219,0.1)", border: "1px solid rgba(26,86,219,0.25)", borderRadius: 12, padding: "16px" }}>
             <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Your Estimated Offer</p>
             <p style={{ margin: "4px 0 2px", fontSize: 28, fontWeight: 800, color: "#fff" }}>₹15,00,000</p>
             <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.45)" }}>@ 10.5% p.a. · 36 months · ₹48,590/mo EMI</p>
@@ -389,7 +389,7 @@ const s = {
   heroTitle:   { fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 800, color: "#fff", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-1.5px" },
   heroSubtitle:{ fontSize: 15, color: "rgba(255,255,255,0.65)", lineHeight: 1.75, maxWidth: 480, margin: "0 0 32px" },
   heroButtons: { display: "flex", gap: 14, flexWrap: "wrap" },
-  heroBtn:     { padding: "14px 32px", borderRadius: 10, border: "none", background: ORANGE, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Segoe UI', sans-serif", boxShadow: "0 8px 24px rgba(232,80,10,0.25)" },
+  heroBtn:     { padding: "14px 32px", borderRadius: 10, border: "none", background: ORANGE, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Segoe UI', sans-serif", boxShadow: "0 8px 24px rgba(26,86,219,0.25)" },
   heroGhost:   { padding: "14px 24px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "rgba(255,255,255,0.75)", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Segoe UI', sans-serif" },
   heroCard:    { flex: "0 0 300px", background: "rgba(255,255,255,0.07)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: 24, position: "relative", zIndex: 1 },
   heroCardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.08)" },
@@ -421,7 +421,7 @@ const s = {
   // Steps
   stepItem:      { display: "flex", gap: 16, marginBottom: 0 },
   stepLeft:      { display: "flex", flexDirection: "column", alignItems: "center" },
-  stepNumBox:    { width: 44, height: 44, borderRadius: 12, background: "rgba(232,80,10,0.08)", border: "1px solid rgba(232,80,10,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 },
+  stepNumBox:    { width: 44, height: 44, borderRadius: 12, background: "rgba(26,86,219,0.08)", border: "1px solid rgba(26,86,219,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 },
   stepConnector: { width: 2, flex: 1, background: "#e8ecf0", minHeight: 28, margin: "6px 0" },
   stepContent:   { paddingBottom: 28 },
   stepN:         { fontSize: 11, fontWeight: 700, color: ORANGE, letterSpacing: "0.5px", textTransform: "uppercase" },

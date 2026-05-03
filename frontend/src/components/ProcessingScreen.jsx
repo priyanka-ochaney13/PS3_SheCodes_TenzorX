@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import api from "../services/api";
 
 const NAVY   = "#001840";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 
 const STEPS = [
   { id: "upload",  label: "Uploading your documents",           duration: 1200 },
@@ -95,7 +95,7 @@ export default function ProcessingScreen({ sessionId, onPassed, onFraudRejected 
                   <div style={{
                     ...s.stepDot,
                     background: isDone   ? "#dcfce7" :
-                                isActive ? "rgba(232,80,10,0.1)" :
+                                isActive ? "rgba(26,86,219,0.1)" :
                                            "#f5f7fa",
                     border:     isDone   ? "1.5px solid #22c55e" :
                                 isActive ? `1.5px solid ${ORANGE}` :
@@ -123,7 +123,7 @@ export default function ProcessingScreen({ sessionId, onPassed, onFraudRejected 
                     </span>
                   )}
                   {isActive && (
-                    <span style={{ ...s.pill, background: "rgba(232,80,10,0.08)", color: ORANGE, border: `1px solid rgba(232,80,10,0.2)` }}>
+                    <span style={{ ...s.pill, background: "rgba(26,86,219,0.08)", color: ORANGE, border: `1px solid rgba(26,86,219,0.2)` }}>
                       Running
                     </span>
                   )}
@@ -151,7 +151,7 @@ const s = {
     background: "#fff", borderRadius: 20, padding: "40px 36px",
     width: "100%", maxWidth: 480, boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
   },
-  iconWrap:    { width: 64, height: 64, borderRadius: 16, background: "rgba(232,80,10,0.08)", border: "1px solid rgba(232,80,10,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" },
+  iconWrap:    { width: 64, height: 64, borderRadius: 16, background: "rgba(26,86,219,0.08)", border: "1px solid rgba(26,86,219,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" },
   title:       { fontSize: 22, fontWeight: 700, color: "#111", textAlign: "center", margin: "0 0 8px" },
   subtitle:    { fontSize: 13, color: "#888", textAlign: "center", lineHeight: 1.6, margin: "0 0 28px" },
   track:       { height: 8, background: "#f0f4f8", borderRadius: 99, overflow: "hidden", marginBottom: 8 },
@@ -162,6 +162,6 @@ const s = {
   stepDot:     { width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.3s" },
   stepLabel:   { fontSize: 13, flex: 1, transition: "color 0.3s" },
   pill:        { fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 99, flexShrink: 0 },
-  spinner:     { width: 14, height: 14, border: `2px solid rgba(232,80,10,0.2)`, borderTop: `2px solid ${ORANGE}`, borderRadius: "50%", animation: "spin 0.7s linear infinite" },
+  spinner:     { width: 14, height: 14, border: `2px solid rgba(26,86,219,0.2)`, borderTop: `2px solid ${ORANGE}`, borderRadius: "50%", animation: "spin 0.7s linear infinite" },
   note:        { fontSize: 12, color: "#bbb", textAlign: "center" },
 };

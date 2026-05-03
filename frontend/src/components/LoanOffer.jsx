@@ -1,6 +1,6 @@
 // src/components/LoanOffer.jsx — Poonawalla navy + orange, with EMI breakdown
 const NAVY   = "#001840";
-const ORANGE = "#E8500A";
+const ORANGE = "#1a56db";
 
 export default function LoanOffer({ result, onStartNew }) {
   const approved = result?.status === "approved";
@@ -135,7 +135,7 @@ export default function LoanOffer({ result, onStartNew }) {
                   ))}
                 </div>
                 <div style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "14px 18px", marginBottom: 24 }}>
-                  <p style={{ margin: 0, fontSize: 13, color: "#c2410c" }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "#1a56db" }}>
                     📞 Support: <a href="tel:18002669090" style={{ color: ORANGE, textDecoration: "none", fontWeight: 600 }}>1800-266-9090</a> · Mon–Sat 9am–6pm
                   </p>
                 </div>
@@ -166,8 +166,8 @@ function BRow({ label, value, highlight, bold }) {
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center",
       padding: "11px 14px", borderRadius: 8,
-      background: highlight ? "rgba(232,80,10,0.06)" : "transparent",
-      border: highlight ? "1px solid rgba(232,80,10,0.15)" : "1px solid transparent",
+      background: highlight ? "rgba(26,86,219,0.06)" : "transparent",
+      border: highlight ? "1px solid rgba(26,86,219,0.15)" : "1px solid transparent",
       marginBottom: 4,
     }}>
       <span style={{ fontSize: 13, color: "#777" }}>{label}</span>
