@@ -3,18 +3,14 @@ const NAVY   = "#001840";
 const ORANGE = "#1a56db";
 
 export default function LoanOffer({ result, onStartNew }) {
-  const approved = result?.status === "approved";
+  const approved = result?.status === "completed" && result?.approved_amount > 0;
 
-  // EMI calculation (flat reducing balance)
-  const calcEMI = (principal, ratePA, months) => {
-    if (!principal || !ratePA || !months) return null;
-    const r = ratePA / 12 / 100;
-    return Math.round((principal * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1));
-  };
-
-  const emi        = result?.emi || calcEMI(result?.amount, result?.interest_rate, result?.tenure_months);
-  const totalPay   = emi && result?.tenure_months ? emi * result.tenure_months : null;
-  const totalInt   = totalPay && result?.amount ? totalPay - result.amount : null;
+  // Extract recommended EMI option
+  const recommendedEmi = result?.emi_options?.[0];
+  const emi            = recommendedEmi?.emi;
+  const tenure         = recommendedEmi?.tenure_months;
+  const totalPayable   = recommendedEmi?.total_payable;
+  const totalInterest  = recommendedEmi?.total_interest;
 
   return (
     <div style={s.page}>
@@ -47,10 +43,10 @@ export default function LoanOffer({ result, onStartNew }) {
                     Loan Amount Approved
                   </p>
                   <p style={{ margin: "6px 0 0", fontSize: 40, fontWeight: 800, color: "#fff", letterSpacing: "-1px" }}>
-                    ₹{result.amount?.toLocaleString("en-IN")}
+                    ₹{result.approved_amount?.toLocaleString("en-IN")}
                   </p>
                   <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-                    {result.product_type || "Personal Loan"} · {result.tenure_months} months
+                    {result.product || "Personal Loan"} · {tenure} months
                   </p>
                 </div>
 
@@ -69,12 +65,12 @@ export default function LoanOffer({ result, onStartNew }) {
                 <div style={s.section}>
                   <h3 style={s.sectionTitle}>💳 EMI Breakdown</h3>
                   <div style={s.breakdownTable}>
-                    <BRow label="Principal Amount"    value={`₹${result.amount?.toLocaleString("en-IN")}`} />
+                    <BRow label="Principal Amount"    value={`₹${result.approved_amount?.toLocaleString("en-IN")}`} />
                     <BRow label="Interest Rate"       value={`${result.interest_rate}% per annum`} />
-                    <BRow label="Loan Tenure"         value={`${result.tenure_months} months`} />
+                    <BRow label="Loan Tenure"         value={`${tenure} months`} />
                     <BRow label="Monthly EMI"         value={emi ? `₹${emi.toLocaleString("en-IN")}` : "—"} highlight />
-                    {totalInt && <BRow label="Total Interest Payable" value={`₹${totalInt.toLocaleString("en-IN")}`} />}
-                    {totalPay && <BRow label="Total Amount Payable"   value={`₹${totalPay.toLocaleString("en-IN")}`} bold />}
+                    {totalInterest && <BRow label="Total Interest Payable" value={`₹${totalInterest.toLocaleString("en-IN")}`} />}
+                    {totalPayable && <BRow label="Total Amount Payable"   value={`₹${totalPayable.toLocaleString("en-IN")}`} bold />}
                   </div>
                 </div>
               )}

@@ -56,6 +56,22 @@ export default function PreCallForm({ user, onStartCall, onBack }) {
     setStep(2);
   };
 
+  // ── File type validation ────────────────────────────────
+  const isImageFile = (file) => {
+    return file && file.type && (file.type === "image/jpeg" || file.type === "image/png");
+  };
+
+  // ── Get client IP ────────────────────────────────────────
+  const getClientIp = async () => {
+    try {
+      const res = await fetch("https://api.ipify.org?format=json");
+      const data = await res.json();
+      return data.ip || "0.0.0.0";
+    } catch {
+      return "0.0.0.0";
+    }
+  };
+
   // ── Step 2 submit — all docs required ────────────────
   const handleSubmit = async () => {
     if (!bankStatement) { setError("Bank statement PDF is required.");     return; }
@@ -63,10 +79,23 @@ export default function PreCallForm({ user, onStartCall, onBack }) {
     if (!aadhaarCard)   { setError("Aadhaar card upload is required.");    return; }
     if (!panCard)       { setError("PAN card upload is required.");        return; }
 
+    // Validate Aadhaar and PAN are images (not PDF)
+    if (!isImageFile(aadhaarCard)) {
+      setError("Aadhaar card must be a JPG or PNG image (PDF not accepted).");
+      return;
+    }
+    if (!isImageFile(panCard)) {
+      setError("PAN card must be a JPG or PNG image (PDF not accepted).");
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
     try {
+      // Get client IP
+      const ipAddress = await getClientIp();
+
       // 1. Create session
       setUploadMsg("Creating your session…");
       const sessionRes = await api.post("/session/create", {
@@ -77,42 +106,43 @@ export default function PreCallForm({ user, onStartCall, onBack }) {
         stated_income: parseInt(form.statedIncome),
         loan_type:     form.loanType,
         pdf_password:  form.pdfPassword || null,
+        ip_address:    ipAddress,
       });
       const sessionId = sessionRes.data.session_id;
 
-      // 2. Upload bank statement
-      setUploadMsg("Uploading bank statement (1/4)…");
+      // 2. Upload KYC photo
+      setUploadMsg("Uploading KYC photo (1/4)…");
       const fd1 = new FormData();
       fd1.append("session_id", sessionId);
-      fd1.append("file", bankStatement);
-      await api.post("/documents/upload/bank-statement", fd1, {
+      fd1.append("file", kycPhoto);
+      await api.post("/documents/upload/kyc-photo", fd1, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // 3. Upload KYC photo
-      setUploadMsg("Uploading KYC photo (2/4)…");
+      // 3. Upload Aadhaar
+      setUploadMsg("Uploading Aadhaar card (2/4)…");
       const fd2 = new FormData();
       fd2.append("session_id", sessionId);
-      fd2.append("file", kycPhoto);
-      await api.post("/documents/upload/kyc-photo", fd2, {
+      fd2.append("file", aadhaarCard);
+      await api.post("/documents/upload/aadhaar-card", fd2, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // 4. Upload Aadhaar
-      setUploadMsg("Uploading Aadhaar card (3/4)…");
+      // 4. Upload PAN
+      setUploadMsg("Uploading PAN card (3/4)…");
       const fd3 = new FormData();
       fd3.append("session_id", sessionId);
-      fd3.append("file", aadhaarCard);
-      await api.post("/documents/upload/aadhaar-card", fd3, {
+      fd3.append("file", panCard);
+      await api.post("/documents/upload/pan-card", fd3, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // 5. Upload PAN
-      setUploadMsg("Uploading PAN card (4/4)…");
+      // 5. Upload bank statement (triggers transaction agent)
+      setUploadMsg("Uploading bank statement (4/4)…");
       const fd4 = new FormData();
       fd4.append("session_id", sessionId);
-      fd4.append("file", panCard);
-      await api.post("/documents/upload/pan-card", fd4, {
+      fd4.append("file", bankStatement);
+      await api.post("/documents/upload/bank-statement", fd4, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -241,20 +271,20 @@ export default function PreCallForm({ user, onStartCall, onBack }) {
                 />
                 <UploadField
                   label="Aadhaar Card"
-                  accept="image/*,.pdf"
+                  accept="image/jpeg,image/png"
                   file={aadhaarCard}
                   onChange={setAadhaarCard}
-                  hint="Front side · Clearly readable"
+                  hint="JPG or PNG only · Front side · Clearly readable"
                   required
                 />
               </div>
 
               <UploadField
                 label="PAN Card"
-                accept="image/*,.pdf"
+                accept="image/jpeg,image/png"
                 file={panCard}
                 onChange={setPanCard}
-                hint="Clear scan or photo"
+                hint="JPG or PNG only · Clear scan or photo"
                 required
               />
 

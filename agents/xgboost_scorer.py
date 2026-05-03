@@ -1,8 +1,7 @@
 import joblib
 import numpy as np
-
 def score_fraud(features):
-    model = joblib.load('models/fraud_model.pkl')
+    model = joblib.load('fraud_model.pkl')
     vector = np.array([[
         features['avg_monthly_credit'],
         features['credit_consistency_score'],

@@ -25,7 +25,14 @@ export default function App() {
   const navigate = useNavigate();
 
   const [user,       setUser]       = useState(null);
-  const [callParams, setCallParams] = useState(null);
+  const [callParams, setCallParams] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("callParams");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loanResult, setLoanResult] = useState(null);
   const [fraudInfo,  setFraudInfo]  = useState(null);
   const [errorMsg,   setErrorMsg]   = useState(null);
@@ -50,7 +57,11 @@ export default function App() {
       <Route path="/apply" element={
         <PreCallForm
           user={user}
-          onStartCall={(p) => { setCallParams(p); navigate("/processing"); }}
+          onStartCall={(p) => {
+            setCallParams(p);
+            sessionStorage.setItem("callParams", JSON.stringify(p));
+            navigate("/processing");
+          }}
           onBack={() => navigate("/home")}
         />
       } />
@@ -76,9 +87,9 @@ export default function App() {
           sessionId    = {callParams?.sessionId}
           kycAddress   = {callParams?.kycAddress}
           statedIncome = {callParams?.statedIncome}
-          onCallEnd    = {(result) => {
-            if (result?.error) { goError(result.error); return; }
-            setLoanResult(result);
+          onCallEnd    = {({ sessionId }) => {
+            // Pipeline runs in ExtractorReview after call ends
+            // Navigate to review where user will confirm extracted data
             navigate("/review");
           }}
         />
@@ -87,7 +98,10 @@ export default function App() {
       <Route path="/review" element={
         <ExtractorReview
           sessionId={callParams?.sessionId}
-          onConfirmed={(offerData) => { setLoanResult(offerData); navigate("/offer"); }}
+          onConfirmed={(offerData) => {
+            setLoanResult(offerData);
+            navigate("/offer");
+          }}
           onBack={() => navigate("/call")}
         />
       } />

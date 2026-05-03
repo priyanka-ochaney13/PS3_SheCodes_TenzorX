@@ -1,8 +1,16 @@
 // src/components/FraudRejected.jsx — Poonawalla navy+white theme
+import { useLocation } from "react-router-dom";
+
 const NAVY   = "#001840";
 const ORANGE = "#1a56db";
 
 export default function FraudRejected({ signals = [], weight = null, onTryAgain }) {
+  const location = useLocation();
+  
+  // Prefer router state (from ExtractorReview) over props (from ProcessingScreen)
+  const routerFraud = location.state?.fraudInfo;
+  const displaySignals = routerFraud?.signals || signals;
+  const displayWeight  = routerFraud?.weight  ?? weight;
   return (
     <div style={s.page}>
       <div style={s.topBar}>
@@ -22,11 +30,11 @@ export default function FraudRejected({ signals = [], weight = null, onTryAgain 
           </p>
 
           {/* Signals */}
-          {signals && signals.length > 0 && (
+          {displaySignals && displaySignals.length > 0 && (
             <div style={s.signalsBox}>
               <p style={s.signalsTitle}>⚠️ Flags Raised</p>
               <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                {signals.map((sig, i) => (
+                {displaySignals.map((sig, i) => (
                   <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", flexShrink: 0, display: "inline-block" }} />
                     <span style={{ fontSize: 13, color: "#444" }}>{sig}</span>
@@ -37,16 +45,16 @@ export default function FraudRejected({ signals = [], weight = null, onTryAgain 
           )}
 
           {/* Weight */}
-          {weight !== null && (
+          {displayWeight !== null && (
             <div style={s.weightRow}>
               <span style={{ fontSize: 13, color: "#888" }}>Fraud Risk Score</span>
               <span style={{
                 padding: "4px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
-                background: weight > 0.7 ? "#fef2f2" : weight > 0.4 ? "#fff7ed" : "#f5f7fa",
-                color:      weight > 0.7 ? "#dc2626" : weight > 0.4 ? "#ea580c" : "#888",
-                border:     weight > 0.7 ? "1px solid #fecaca" : weight > 0.4 ? "1px solid #fed7aa" : "1px solid #e8ecf0",
+                background: displayWeight > 0.7 ? "#fef2f2" : displayWeight > 0.4 ? "#fff7ed" : "#f5f7fa",
+                color:      displayWeight > 0.7 ? "#dc2626" : displayWeight > 0.4 ? "#ea580c" : "#888",
+                border:     displayWeight > 0.7 ? "1px solid #fecaca" : displayWeight > 0.4 ? "1px solid #fed7aa" : "1px solid #e8ecf0",
               }}>
-                {Math.round(weight * 100)} / 100
+                {Math.round(displayWeight * 100)} / 100
               </span>
             </div>
           )}

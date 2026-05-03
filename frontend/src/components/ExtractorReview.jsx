@@ -1,5 +1,16 @@
-// src/components/ExtractorReview.jsx — Poonawalla navy + white theme
+// src/components/ExtractorReview.jsx — Pipeline orchestration + review
+// ON MOUNT:
+//   1. Poll GET /session/{id} every 1s for agents_completed (geo + deepface), 30s timeout
+//   2. POST /loan/pipeline/{id} with 180s timeout
+//   3. Check fraud_decision — navigate("/rejected") if halt
+//   4. GET /agents/{id}/extractor/result
+//   5. Display loan_schema for review
+// ON CONFIRM:
+//   6. GET /loan/{id}/summary
+//   7. Call onConfirmed + navigate("/offer")
+
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 const NAVY   = "#001840";
@@ -17,38 +28,102 @@ const EMPLOYMENT_LABELS = {
   "unknown": "Not Specified",
 };
 
-export default function ExtractorReview({ sessionId, onConfirmed, onBack }) {
-  const [schema,     setSchema]     = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+export default function ExtractorReview({ sessionId, loanResult, onConfirmed, onBack }) {
+  const navigate = useNavigate();
+  const [schema,        setSchema]        = useState(null);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState(null);
+  const [submitting,    setSubmitting]    = useState(false);
+  const [pipelinePhase, setPipelinePhase] = useState("polling");  // polling | running | complete | error
 
   useEffect(() => {
-    api.get(`/session/${sessionId}`)
-      .then((res) => {
-        // Backend returns extractor_output nested inside the session object
-        // It's stored after /loan/pipeline runs
-        const data = res.data;
-        const schema = data?.extractor_output?.loan_schema
-                    || data?.loan_schema
-                    || null;
-        if (schema) {
-          setSchema(schema);
-        } else {
-          setError("extractor_pending");
+    const runPipeline = async () => {
+      try {
+        // ── Step 1: Poll for geo + deepface completion (max 30s) ──
+        setPipelinePhase("polling");
+        let agentsReady = false;
+        let pollAttempts = 0;
+        const maxPollAttempts = 30;
+
+        while (!agentsReady && pollAttempts < maxPollAttempts) {
+          try {
+            const sessionRes = await api.get(`/session/${sessionId}`);
+            const completed = sessionRes.data?.agents_completed || [];
+            agentsReady = completed.includes("geo") && completed.includes("deepface");
+            if (!agentsReady) {
+              await new Promise((r) => setTimeout(r, 1000));
+              pollAttempts += 1;
+            }
+          } catch {
+            await new Promise((r) => setTimeout(r, 1000));
+            pollAttempts += 1;
+          }
         }
-      })
-      .catch((err) => setError(err.response?.status === 404 ? "extractor_pending" : err.message))
-      .finally(() => setLoading(false));
-  }, [sessionId]);
+
+        // ── Step 2: Run pipeline (max 180s) ──
+        setPipelinePhase("running");
+        const pipelineAbort = new AbortController();
+        const pipelineTimeout = setTimeout(() => pipelineAbort.abort(), 180000);
+
+        let pipelineRes;
+        try {
+          pipelineRes = await api.post(`/loan/pipeline/${sessionId}`, {}, {
+            signal: pipelineAbort.signal,
+          });
+        } catch (err) {
+          if (err.name === "AbortError") {
+            throw new Error("Pipeline analysis timed out after 180 seconds");
+          }
+          throw err;
+        } finally {
+          clearTimeout(pipelineTimeout);
+        }
+
+        // ── Step 3: Check fraud decision ──
+        if (pipelineRes.data?.fraud_decision === "halt" || pipelineRes.data?.halted_reason) {
+          navigate("/rejected", {
+            state: {
+              fraudInfo: {
+                decision: pipelineRes.data?.fraud_decision,
+                reason: pipelineRes.data?.halted_reason,
+                sessionId,
+              },
+            },
+          });
+          return;
+        }
+
+        // ── Step 4: Fetch extractor result ──
+        const extractorRes = await api.get(`/agents/${sessionId}/extractor/result`);
+        const extractedSchema = extractorRes.data?.result?.loan_schema;
+
+        if (!extractedSchema) {
+          throw new Error("No extractor result available");
+        }
+
+        setSchema(extractedSchema);
+        setPipelinePhase("complete");
+        setLoading(false);
+
+      } catch (err) {
+        setError(err.message || "Pipeline error");
+        setPipelinePhase("error");
+        setLoading(false);
+      }
+    };
+
+    runPipeline();
+  }, [sessionId, navigate]);
 
   const handleConfirm = async () => {
     setSubmitting(true);
     try {
-      const res = await api.post(`/loan/generate/${sessionId}`);
-      onConfirmed(res.data);
+      // Pipeline already ran — fetch summary and navigate to offer
+      const res = await api.get(`/loan/${sessionId}/summary`);
+      onConfirmed(res.data.data);
+      navigate("/offer");
     } catch (err) {
-      setError("Failed to generate offer: " + (err.response?.data?.detail || err.message));
+      setError("Failed to fetch offer: " + (err.response?.data?.detail || err.message));
       setSubmitting(false);
     }
   };
@@ -71,28 +146,14 @@ export default function ExtractorReview({ sessionId, onConfirmed, onBack }) {
           {loading && (
             <div style={s.center}>
               <div style={s.spinner} />
-              <p style={{ color: "#888", fontSize: 14, marginTop: 16 }}>Loading your application summary...</p>
-            </div>
-          )}
-
-          {!loading && error === "extractor_pending" && (
-            <div style={s.center}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>⚙️</div>
-              <h2 style={{ margin: "0 0 10px", color: "#111" }}>Summary Not Available Yet</h2>
-              <p style={{ color: "#888", fontSize: 14, lineHeight: 1.7, marginBottom: 28, maxWidth: 400 }}>
-                The <code style={{ background: "#f5f7fa", padding: "2px 6px", borderRadius: 4, color: ORANGE }}>/extractor_output</code> endpoint
-                hasn't been connected yet. Once the backend wires it up, this screen will show the full AI-extracted summary.
+              <p style={{ color: "#888", fontSize: 14, marginTop: 16 }}>
+                {pipelinePhase === "polling" && "Waiting for verification agents..."}
+                {pipelinePhase === "running" && "Analysing your application..."}
               </p>
-              <div style={{ display: "flex", gap: 12 }}>
-                <button style={s.btnBack} onClick={onBack}>← Back</button>
-                <button style={s.btnPrimary} onClick={handleConfirm} disabled={submitting}>
-                  {submitting ? "Generating..." : "Continue to Offer →"}
-                </button>
-              </div>
             </div>
           )}
 
-          {!loading && error && error !== "extractor_pending" && (
+          {!loading && error && (
             <div style={s.center}>
               <p style={{ color: "#dc2626" }}>⚠️ {error}</p>
               <button style={{ ...s.btnBack, marginTop: 16 }} onClick={onBack}>← Back</button>
@@ -107,7 +168,7 @@ export default function ExtractorReview({ sessionId, onConfirmed, onBack }) {
                 <div>
                   <h1 style={{ fontSize: 20, fontWeight: 700, color: "#111", margin: "0 0 4px" }}>AI Extracted Your Application</h1>
                   <p style={{ fontSize: 13, color: "#888", margin: 0, lineHeight: 1.5 }}>
-                    Our AI analysed your call and bank statement. Review what was captured, then confirm to generate your offer.
+                    Our AI analysed your call and verified your identity. Review what was captured, then confirm to generate your offer.
                   </p>
                 </div>
               </div>

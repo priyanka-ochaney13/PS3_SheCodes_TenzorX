@@ -1,0 +1,19 @@
+{
+  "agent": "geo",
+  "status": "completed",
+  "address_match": true,
+  "distance_km": 18.13,
+  "live_location": {
+    "lat": 19.17434823701744,
+    "lon": 72.97259165475471,
+    "city": "Thane"
+  },
+  "kyc_location": {
+    "lat": 19.2403,
+    "lon": 73.1305,
+    "formatted": "Kalyan, India"
+  },
+  "risk_level": "low",
+  "flag": null,
+  "error": null
+}
