@@ -7,3 +7,4 @@ alembic/
 instance
 alembic.ini
 *.pyc
+backend/uploads/*
