@@ -2,11 +2,11 @@
 
 An end-to-end AI-powered loan onboarding system featuring a multi-agent pipeline for real-time document verification, fraud detection, and automated credit decisioning via video KYC.
 
-## � Demo Video
+## Demo Video
 
 [Watch the Demo Video on Google Drive](https://drive.google.com/file/d/1HKknZSH7Yds1v08rpuvu4cqvm_9F-Guk/view?usp=sharing)
 
-## �🚀 Overview
+## Overview
 
 This project automates the complex process of loan origination using a swarm of specialized AI agents. It guides a customer from initial application through document uploads and a live video call, concluding with an instant loan offer or rejection based on real-time risk analysis.
 
@@ -37,7 +37,7 @@ The system follows a strict asynchronous processing flow during the "Processing"
    - **RED**: User is redirected to a "Rejected" screen with specific fraud signals.
    - **GREEN/YELLOW**: User proceeds to the Video KYC call.
 
-## ��️ Tech Stack
+##  Tech Stack
 
 - **Backend**: FastAPI (Python), SQLAlchemy (Async), PostgreSQL (Supabase).
 - **Frontend**: React, Vite, Tailwind CSS.
