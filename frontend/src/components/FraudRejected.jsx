@@ -1,239 +1,124 @@
-// src/components/FraudRejected.jsx
-// Shown when fraud pre-screen returns RED verdict
+// src/components/FraudRejected.jsx — Poonawalla navy+white theme
+const NAVY   = "#001840";
+const ORANGE = "#E8500A";
+
 export default function FraudRejected({ signals = [], weight = null, onTryAgain }) {
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-
-        {/* Header */}
-        <div style={styles.iconWrap}>
-          <span style={{ fontSize: 48 }}>🚫</span>
+    <div style={s.page}>
+      <div style={s.topBar}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 22 }}>🏦</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>Poonawalla Fincorp</span>
         </div>
+      </div>
 
-        <h1 style={styles.title}>Application Could Not Proceed</h1>
-        <p style={styles.subtitle}>
-          Our automated security checks flagged your application before the video call.
-          We are unable to continue with this session.
-        </p>
-
-        {/* Fraud signals */}
-        {signals && signals.length > 0 && (
-          <div style={styles.signalsBox}>
-            <p style={styles.signalsTitle}>⚠️ Flags Raised</p>
-            <ul style={styles.signalsList}>
-              {signals.map((sig, i) => (
-                <li key={i} style={styles.signalItem}>
-                  <span style={styles.dot} />
-                  {sig}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Risk weight if available */}
-        {weight !== null && (
-          <div style={styles.weightRow}>
-            <span style={{ color: "#aaa", fontSize: 13 }}>Fraud Risk Weight</span>
-            <span style={{
-              ...styles.weightBadge,
-              background: weight > 0.7 ? "rgba(255,70,70,0.15)"  :
-                          weight > 0.4 ? "rgba(255,165,0,0.15)"  :
-                                         "rgba(255,255,255,0.05)",
-              color:      weight > 0.7 ? "#ff6b6b"  :
-                          weight > 0.4 ? "#ffb347"  :
-                                         "#aaa",
-            }}>
-              {Math.round(weight * 100)} / 100
-            </span>
-          </div>
-        )}
-
-        {/* What to do next */}
-        <div style={styles.nextSteps}>
-          <p style={styles.nextTitle}>What you can do</p>
-          <div style={styles.stepItem}>
-            <span style={styles.stepNum}>1</span>
-            <p style={styles.stepText}>
-              Ensure your bank statement is an original, unmodified PDF directly downloaded from your bank's portal or email.
-            </p>
-          </div>
-          <div style={styles.stepItem}>
-            <span style={styles.stepNum}>2</span>
-            <p style={styles.stepText}>
-              If you believe this is an error, contact our support team with your session reference number.
-            </p>
-          </div>
-          <div style={styles.stepItem}>
-            <span style={styles.stepNum}>3</span>
-            <p style={styles.stepText}>
-              You may re-apply after 30 days. Repeated failed attempts may affect your credit profile.
-            </p>
-          </div>
-        </div>
-
-        {/* Support */}
-        <div style={styles.supportBox}>
-          <p style={{ margin: 0, color: "#aaa", fontSize: 13 }}>
-            📞 Support:{" "}
-            <a href="tel:18001033" style={{ color: "#48cae4", textDecoration: "none" }}>
-              1800 103 3 (Toll Free)
-            </a>
+      <div style={s.body}>
+        <div style={s.card}>
+          <div style={s.iconWrap}>🚫</div>
+          <h1 style={s.title}>Application Could Not Proceed</h1>
+          <p style={s.subtitle}>
+            Our automated security checks flagged your application before the video call.
+            We are unable to continue with this session.
           </p>
-          <p style={{ margin: "4px 0 0", color: "#555", fontSize: 12 }}>
-            Mon–Sat, 9 AM – 7 PM
-          </p>
-        </div>
 
-        <button style={styles.btn} onClick={onTryAgain}>
-          ← Start a New Application
-        </button>
+          {/* Signals */}
+          {signals && signals.length > 0 && (
+            <div style={s.signalsBox}>
+              <p style={s.signalsTitle}>⚠️ Flags Raised</p>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                {signals.map((sig, i) => (
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", flexShrink: 0, display: "inline-block" }} />
+                    <span style={{ fontSize: 13, color: "#444" }}>{sig}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Weight */}
+          {weight !== null && (
+            <div style={s.weightRow}>
+              <span style={{ fontSize: 13, color: "#888" }}>Fraud Risk Score</span>
+              <span style={{
+                padding: "4px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                background: weight > 0.7 ? "#fef2f2" : weight > 0.4 ? "#fff7ed" : "#f5f7fa",
+                color:      weight > 0.7 ? "#dc2626" : weight > 0.4 ? "#ea580c" : "#888",
+                border:     weight > 0.7 ? "1px solid #fecaca" : weight > 0.4 ? "1px solid #fed7aa" : "1px solid #e8ecf0",
+              }}>
+                {Math.round(weight * 100)} / 100
+              </span>
+            </div>
+          )}
+
+          {/* Steps */}
+          <div style={s.nextBox}>
+            <p style={s.nextTitle}>What you can do</p>
+            {[
+              "Ensure your bank statement is an original, unmodified PDF downloaded directly from your bank portal.",
+              "If you believe this is an error, contact our support team with your session reference number.",
+              "You may re-apply after 30 days. Repeated failures may affect your credit profile.",
+            ].map((t, i) => (
+              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
+                <div style={s.stepNum}>{i + 1}</div>
+                <p style={{ margin: 0, fontSize: 13, color: "#555", lineHeight: 1.6 }}>{t}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Support */}
+          <div style={s.supportBox}>
+            <p style={{ margin: 0, fontSize: 13, color: "#555" }}>
+              📞 Support:{" "}
+              <a href="tel:18002669090" style={{ color: ORANGE, textDecoration: "none", fontWeight: 600 }}>
+                1800-266-9090 (Toll Free)
+              </a>
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#aaa" }}>Mon–Sat, 9 AM – 6 PM</p>
+          </div>
+
+          <button style={s.btn} onClick={onTryAgain}>← Start a New Application</button>
+        </div>
       </div>
     </div>
   );
 }
 
-const styles = {
-  page: {
-    minHeight:      "100vh",
-    background:     "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
-    display:        "flex",
-    alignItems:     "center",
-    justifyContent: "center",
-    fontFamily:     "'Segoe UI', sans-serif",
-    padding:        24,
-  },
+const s = {
+  page:    { minHeight: "100vh", background: "#f0f4f8", fontFamily: "'Segoe UI', sans-serif", display: "flex", flexDirection: "column" },
+  topBar:  { background: "#fff", borderBottom: "1px solid #e8ecf0", padding: "14px 28px" },
+  body:    { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 },
   card: {
-    background:     "rgba(255,255,255,0.04)",
-    border:         "1px solid rgba(255,100,100,0.2)",
-    borderRadius:   24,
-    padding:        "40px 36px",
-    width:          "100%",
-    maxWidth:       520,
-    backdropFilter: "blur(20px)",
-    color:          "#fff",
+    background: "#fff", borderRadius: 20, padding: "40px 36px",
+    width: "100%", maxWidth: 520, boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
   },
-  iconWrap: {
-    textAlign:    "center",
-    marginBottom: 16,
-  },
-  title: {
-    fontSize:   26,
-    fontWeight: 700,
-    textAlign:  "center",
-    margin:     "0 0 10px",
-    color:      "#fff",
-  },
-  subtitle: {
-    color:      "#aaa",
-    fontSize:   14,
-    textAlign:  "center",
-    lineHeight: 1.6,
-    margin:     "0 0 24px",
-  },
+  iconWrap: { fontSize: 48, textAlign: "center", marginBottom: 16 },
+  title:    { fontSize: 24, fontWeight: 700, textAlign: "center", color: "#111", margin: "0 0 10px" },
+  subtitle: { color: "#888", fontSize: 14, textAlign: "center", lineHeight: 1.6, margin: "0 0 24px" },
   signalsBox: {
-    background:   "rgba(255,70,70,0.07)",
-    border:       "1px solid rgba(255,70,70,0.2)",
-    borderRadius: 12,
-    padding:      "16px 20px",
-    marginBottom: 20,
+    background: "#fef2f2", border: "1px solid #fecaca",
+    borderRadius: 12, padding: "16px 20px", marginBottom: 20,
   },
-  signalsTitle: {
-    margin:     "0 0 10px",
-    fontWeight: 600,
-    fontSize:   13,
-    color:      "#ff8888",
-  },
-  signalsList: {
-    margin:    0,
-    padding:   0,
-    listStyle: "none",
-  },
-  signalItem: {
-    display:    "flex",
-    alignItems: "center",
-    gap:        10,
-    color:      "#ddd",
-    fontSize:   13,
-    marginBottom: 6,
-  },
-  dot: {
-    width:        6,
-    height:       6,
-    borderRadius: "50%",
-    background:   "#ff6b6b",
-    flexShrink:   0,
-  },
+  signalsTitle: { margin: "0 0 10px", fontWeight: 600, fontSize: 13, color: "#dc2626" },
   weightRow: {
-    display:        "flex",
-    justifyContent: "space-between",
-    alignItems:     "center",
-    padding:        "12px 0",
-    borderTop:      "1px solid rgba(255,255,255,0.07)",
-    borderBottom:   "1px solid rgba(255,255,255,0.07)",
-    marginBottom:   24,
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    padding: "14px 0", borderTop: "1px solid #f0f4f8", borderBottom: "1px solid #f0f4f8", marginBottom: 24,
   },
-  weightBadge: {
-    padding:      "4px 12px",
-    borderRadius: 8,
-    fontSize:     13,
-    fontWeight:   600,
-  },
-  nextSteps: {
-    marginBottom: 24,
-  },
-  nextTitle: {
-    fontSize:     13,
-    fontWeight:   600,
-    color:        "#aaa",
-    margin:       "0 0 14px",
-    textTransform:"uppercase",
-    letterSpacing:"0.5px",
-  },
-  stepItem: {
-    display:    "flex",
-    gap:        14,
-    alignItems: "flex-start",
-    marginBottom: 14,
-  },
+  nextBox:  { marginBottom: 24 },
+  nextTitle:{ fontSize: 12, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 14px" },
   stepNum: {
-    width:          24,
-    height:         24,
-    background:     "rgba(255,255,255,0.08)",
-    borderRadius:   "50%",
-    display:        "flex",
-    alignItems:     "center",
-    justifyContent: "center",
-    fontSize:       12,
-    fontWeight:     700,
-    flexShrink:     0,
-    color:          "#aaa",
-    lineHeight:     "24px",
-    textAlign:      "center",
-  },
-  stepText: {
-    margin:     0,
-    fontSize:   13,
-    color:      "#aaa",
-    lineHeight: 1.6,
+    width: 24, height: 24, borderRadius: "50%",
+    background: "#f5f7fa", border: "1px solid #e8ecf0",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 11, fontWeight: 700, color: "#888", flexShrink: 0,
   },
   supportBox: {
-    background:   "rgba(255,255,255,0.04)",
-    border:       "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 12,
-    padding:      "14px 18px",
-    marginBottom: 24,
-    textAlign:    "center",
+    background: "#f5f7fa", border: "1px solid #e8ecf0",
+    borderRadius: 10, padding: "14px 18px", marginBottom: 24, textAlign: "center",
   },
   btn: {
-    width:        "100%",
-    padding:      14,
-    borderRadius: 10,
-    border:       "1px solid rgba(255,255,255,0.15)",
-    background:   "transparent",
-    color:        "#ccc",
-    fontSize:     15,
-    fontWeight:   600,
-    cursor:       "pointer",
+    width: "100%", padding: 14, borderRadius: 10, border: "1px solid #e8ecf0",
+    background: "#fff", color: "#888", fontSize: 14, fontWeight: 600, cursor: "pointer",
+    fontFamily: "'Segoe UI', sans-serif",
   },
 };

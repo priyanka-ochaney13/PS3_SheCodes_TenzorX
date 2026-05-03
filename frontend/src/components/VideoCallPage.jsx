@@ -152,9 +152,10 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
 
     canvas.toBlob(async (blob) => {
       const formData = new FormData();
-      formData.append("frame",      blob, "frame.jpg");
       formData.append("session_id", sessionId);
-      try { await api.post("/agents/deepface", formData); } catch (_) {}
+      formData.append("file", blob, "frame.jpg");
+      // Correct endpoint — backend auto-triggers deepface in background after this
+      try { await api.post("/documents/upload/live-frame", formData); } catch (_) {}
     }, "image/jpeg");
   };
 
@@ -170,16 +171,24 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
     streamRef.current?.getTracks().forEach((t) => t.stop());
 
     try {
-      // Trigger full pipeline on backend
-      const res = await api.post(`/agents/run/${sessionId}`, {
-        geo_coords:    geoCoords,
-        kyc_address:   kycAddress,
-        stated_income: statedIncome,
+      // Step 1 — Save full speech output to DB (backend requires this before pipeline)
+      const fullTranscript = transcript
+        .map((t) => `${t.role === "agent" ? "Agent" : "Customer"}: ${t.text}`)
+        .join("\n");
+
+      await api.post(`/agents/speech/${sessionId}/save`, {
+        turns:             transcript,
+        full_transcript:   fullTranscript,
+        fraud_signals:     [],
+        conversation_risk: "low",
       });
 
-      setAgentStatus(res.data.agent_statuses || {});
+      // Step 2 — Run the full decision pipeline (extractor → fraud → policy → risk → offer)
+      // Correct endpoint is /loan/pipeline/{id}, NOT /agents/run/{id}
+      const pipelineRes = await api.post(`/loan/pipeline/${sessionId}`);
+      setAgentStatus(pipelineRes.data.agent_statuses || {});
 
-      // Generate loan offer
+      // Step 3 — Get the final offer
       const offerRes = await api.post(`/loan/generate/${sessionId}`);
       setPhase("done");
       onCallEnd(offerRes.data);
