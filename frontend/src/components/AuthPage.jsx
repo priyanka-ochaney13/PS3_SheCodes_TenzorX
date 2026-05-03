@@ -2,6 +2,7 @@
 // Login / Sign Up page — frontend only, no backend yet
 // Poonawalla Fincorp navy + orange brand theme
 import { useState } from "react";
+import api from "../services/api";
 
 export default function AuthPage({ onAuth }) {
   const [mode, setMode]         = useState("login"); // "login" | "signup"
@@ -13,35 +14,52 @@ export default function AuthPage({ onAuth }) {
   const handleChange = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
     setError(null);
-
-    // Basic validation
-    if (!form.email || !form.password) {
-      setError("Email and password are required.");
-      return;
-    }
-    if (mode === "signup") {
-      if (!form.name || !form.phone) {
-        setError("Please fill all fields.");
-        return;
-      }
-      if (form.password !== form.confirm) {
-        setError("Passwords do not match.");
-        return;
-      }
-      if (form.password.length < 6) {
-        setError("Password must be at least 6 characters.");
-        return;
-      }
-    }
-
-    // Simulate auth — replace with real API call when backend is ready
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      if (mode === "login") {
+        // Real Login Call
+        const res = await api.post("/auth/login", { email: form.email, password: form.password });
+        // res.data contains { token, user }
+        localStorage.setItem("token", res.data.token);
+        onAuth(res.data.user);
+      } else {
+        // Real Signup Call
+        if (!form.email || !form.password || !form.name || !form.phone) {
+          throw new Error("Please fill all fields.");
+        }
+        if (form.password !== form.confirm) {
+          throw new Error("Passwords do not match.");
+        }
+        if (form.password.length < 6) {
+          throw new Error("Password must be at least 6 characters");
+        }
+        const res = await api.post("/auth/signup", { 
+          email: form.email, 
+          password: form.password, 
+          name: form.name, 
+          phone: form.phone 
+        });
+        
+        // If the backend returns a token (auto-login enabled in Supabase), redirect immediately
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+          onAuth(res.data.user);
+        } else {
+          // If email verification is required, move to login mode and show message
+          setMode("login");
+          setError("Account created! Please verify your email, then sign in.");
+        }
+      }
+    } catch (err) {
+      console.error("Auth error:", err);
+      setError(err.response?.data?.detail || err.message || "Authentication failed");
+    } finally {
       setLoading(false);
-      onAuth({ email: form.email, name: form.name || form.email.split("@")[0] });
-    }, 900);
+    }
   };
 
   const handleKeyDown = (e) => { if (e.key === "Enter") handleSubmit(); };

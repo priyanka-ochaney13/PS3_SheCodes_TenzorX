@@ -1,19 +1,19 @@
 {
   "agent": "geo",
   "status": "completed",
-  "address_match": true,
-  "distance_km": 18.13,
+  "address_match": false,
+  "distance_km": 477.92,
   "live_location": {
-    "lat": 19.17434823701744,
-    "lon": 72.97259165475471,
-    "city": "Thane"
+    "lat": 19.231552103470055,
+    "lon": 73.16746438282182,
+    "city": "Ulhasnagar"
   },
   "kyc_location": {
-    "lat": 19.2403,
-    "lon": 73.1305,
-    "formatted": "Kalyan, India"
+    "lat": 22.7196,
+    "lon": 75.8577,
+    "formatted": "Indore, India"
   },
-  "risk_level": "low",
-  "flag": null,
+  "risk_level": "high",
+  "flag": "GEO_RED_478km_from_kyc",
   "error": null
 }

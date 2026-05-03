@@ -134,13 +134,10 @@ def extract_pan(text):
     return "Not Found", "❌ Invalid PAN"
 
 # -------- COMBINED KYC ENDPOINT (race-condition safe) --------
-@app.post("/process_kyc_full")
-async def process_kyc_full(req: Request):
-    """Single endpoint replacing verify_docs + process_kyc two-step.
-    Fully isolated per request — no shared file state."""
+async def process_kyc_logic(data: dict):
+    """Core logic extracted from endpoint for direct call support."""
     tmp = get_tmp_dir()
     try:
-        data = await req.json()
         ref_path = f"{tmp}/ref.jpg"
         live_path = f"{tmp}/live.jpg"
         aad_path = f"{tmp}/aad.jpg"
@@ -162,12 +159,12 @@ async def process_kyc_full(req: Request):
         # Face extraction
         live_faces = DeepFace.extract_faces(
             img_path=live_path,
-            detector_backend="retinaface",
+            detector_backend="opencv", # Changed from retinaface for speed
             enforce_detection=False
         )
         ref_faces = DeepFace.extract_faces(
             img_path=ref_path,
-            detector_backend="retinaface",
+            detector_backend="opencv", # Changed from retinaface for speed
             enforce_detection=False
         )
 
@@ -211,6 +208,13 @@ async def process_kyc_full(req: Request):
                 "distance": None, "score": None}
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+@app.post("/process_kyc_full")
+async def process_kyc_full(req: Request):
+    """Single endpoint replacing verify_docs + process_kyc two-step.
+    Fully isolated per request — no shared file state."""
+    data = await req.json()
+    return await process_kyc_logic(data)
 
 # ---------------- VERIFY DOCS ----------------
 @app.post("/verify_docs")

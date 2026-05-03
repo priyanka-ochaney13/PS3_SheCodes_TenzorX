@@ -80,3 +80,15 @@ class AuditLog(Base):
     severity   = Column(String(20), default="info")  # info | warn | error | critical
 
     session = relationship("LoanSession", back_populates="audit_logs")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True) # Supabase Auth ID
+    email      = Column(String(256), unique=True, nullable=False)
+    name       = Column(String(256), nullable=True)
+    phone      = Column(String(20),  nullable=True)
+    kyc_status = Column(String(20),  default="pending")
+    last_login = Column(DateTime,    default=datetime.utcnow)
+    created_at = Column(DateTime,    default=datetime.utcnow)

@@ -39,26 +39,42 @@ export default function ExtractorReview({ sessionId, loanResult, onConfirmed, on
   useEffect(() => {
     const runPipeline = async () => {
       try {
-        // ── Step 1: Poll for geo + deepface completion (max 30s) ──
+        // ── Step 1: Poll for all agents completion (max 300s) ──
         setPipelinePhase("polling");
         let agentsReady = false;
         let pollAttempts = 0;
-        const maxPollAttempts = 30;
+        const maxPollAttempts = 150; // 150 attempts * 2s = 300s (5 mins)
 
         while (!agentsReady && pollAttempts < maxPollAttempts) {
           try {
             const sessionRes = await api.get(`/session/${sessionId}`);
             const completed = sessionRes.data?.agents_completed || [];
-            agentsReady = completed.includes("geo") && completed.includes("deepface");
+            
+            // Debug log to see what's happening
+            console.log(`⏳ Polling agents... Completed: [${completed.join(", ")}]`);
+            
+            // Wait for all 4 primary agents to finish
+            agentsReady = completed.includes("geo") && 
+                          completed.includes("deepface") && 
+                          completed.includes("transaction") &&
+                          completed.includes("speech");
+            
             if (!agentsReady) {
-              await new Promise((r) => setTimeout(r, 1000));
+              await new Promise((r) => setTimeout(r, 2000)); // Increase wait to 2s
               pollAttempts += 1;
             }
-          } catch {
-            await new Promise((r) => setTimeout(r, 1000));
+          } catch (err) {
+            console.error("Polling error:", err);
+            await new Promise((r) => setTimeout(r, 2000));
             pollAttempts += 1;
           }
         }
+
+        if (!agentsReady) {
+          throw new Error("Timeout waiting for background verification agents to complete.");
+        }
+
+        console.log("🚀 All agents ready! Triggering final pipeline...");
 
         // ── Step 2: Run pipeline (max 180s) ──
         setPipelinePhase("running");

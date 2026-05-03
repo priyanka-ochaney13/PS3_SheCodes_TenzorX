@@ -28,7 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, B
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.database import get_db
+from db.database import get_db, AsyncSessionLocal
 from models.db_models import LoanSession, SessionStatus
 from models.schemas import AgentResultResponse, TranscribeResponse
 from utils.audit import audit
@@ -128,17 +128,26 @@ async def run_deepface(
         aadhaar_b64 = _encode_image(session.aadhaar_card_path)
         pan_b64 = _encode_image(session.pan_card_path)
 
-        deepface_url = os.getenv("DEEPFACE_SERVICE_URL", "http://localhost:8001")
+        # deepface_url = os.getenv("DEEPFACE_SERVICE_URL", "http://localhost:8001")
 
-        async with httpx.AsyncClient(timeout=190) as client:
-            face_res = await client.post(f"{deepface_url}/process_kyc_full", json={
-                "photo":   kyc_b64,
-                "image":   live_b64,
-                "aadhaar": aadhaar_b64,
-                "pan":     pan_b64,
-            })
+        # async with httpx.AsyncClient(timeout=300) as client:
+        #     face_res = await client.post(f"{deepface_url}/process_kyc_full", json={
+        #         "photo":   kyc_b64,
+        #         "image":   live_b64,
+        #         "aadhaar": aadhaar_b64,
+        #         "pan":     pan_b64,
+        #     })
 
-        face_data = face_res.json()
+        # face_data = face_res.json()
+
+        # CALL LOGIC DIRECTLY INSTEAD OF HTTP
+        from agents.deepface_agent import process_kyc_logic
+        face_data = await process_kyc_logic({
+            "photo":   kyc_b64,
+            "image":   live_b64,
+            "aadhaar": aadhaar_b64,
+            "pan":     pan_b64,
+        })
         score     = face_data.get("score", 0) or 0
         result    = {
             "agent":           "deepface",
@@ -306,7 +315,7 @@ async def save_speech_output(
     # Check if all parallel agents are done — if so, auto-run pipeline
     if (session.speech_output and session.transaction_output
             and session.deepface_output and session.geo_output):
-        asyncio.create_task(_run_pipeline_background(session_id, db))
+        asyncio.create_task(_run_pipeline_background(session_id))
 
     return AgentResultResponse(session_id=session_id, agent="speech",
                                status="saved", result=speech_data)
@@ -536,9 +545,15 @@ async def analyze_conversation_fraud(
     }
 
 
-async def _run_pipeline_background(session_id, db):
-    try:
-        from routers.loan import run_pipeline
-        await run_pipeline(session_id, db)
-    except Exception as e:
-        print(f"Background pipeline error: {e}")
+async def _run_pipeline_background(session_id: UUID):
+    async with AsyncSessionLocal() as db:
+        try:
+            print(f"🚀 Starting background pipeline for session {session_id}", flush=True)
+            from routers.loan import run_pipeline
+            await run_pipeline(session_id, db)
+            print(f"✅ Background pipeline completed for session {session_id}", flush=True)
+        except Exception as e:
+            import traceback
+            print(f"❌ Background pipeline error for session {session_id}: {e}", flush=True)
+            traceback.print_exc()
+

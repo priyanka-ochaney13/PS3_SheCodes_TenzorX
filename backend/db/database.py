@@ -4,7 +4,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from dotenv import load_dotenv
 
-load_dotenv()
+# Find .env in the root directory (one level up from 'backend/db')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_env = os.path.join(current_dir, "../../.env")
+load_dotenv(root_env)
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",

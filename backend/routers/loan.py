@@ -41,11 +41,62 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
     await audit(db, session_id, "pipeline", "PIPELINE_STARTED")
     await db.commit()
 
-    # ── Guard: minimum required inputs ───────────────────
+    # ── Guard & Self-Heal: missing inputs ──────────────────
     if not session.speech_output:
+        print(f"❌ Pipeline Guard: speech_output is missing for {session_id}", flush=True)
         raise HTTPException(400, "speech_output missing — save speech output first.")
+
+    # Self-heal: Transaction
+    if not session.transaction_output and session.bank_statement_path:
+        print(f"🔄 Auto-retriggering missing transaction agent for {session_id}...", flush=True)
+        from utils.transaction_pipeline import run_transaction_pipeline
+        try:
+            res = run_transaction_pipeline(
+                session.bank_statement_path,
+                session.stated_income or 0,
+                session.loan_type or "personal_loan_salaried",
+                session.pdf_password,
+            )
+            session.transaction_output = res
+            db.add(session)
+            await db.commit()
+        except Exception as e:
+            print(f"⚠️ Self-heal failed for transaction: {e}")
+
+    # Self-heal: DeepFace
+    if not session.deepface_output and session.live_frame_path and session.kyc_photo_path:
+        print(f"🔄 Auto-retriggering missing deepface agent for {session_id}...", flush=True)
+        from agents.deepface_agent import process_kyc_logic
+        import base64
+        def _enc(p): 
+            if not p or not os.path.exists(p): return None
+            with open(p,"rb") as f: return "data:image/jpeg;base64,"+base64.b64encode(f.read()).decode()
+        try:
+            face_data = await process_kyc_logic({
+                "photo": _enc(session.kyc_photo_path),
+                "image": _enc(session.live_frame_path),
+                "aadhaar": _enc(session.aadhaar_card_path),
+                "pan": _enc(session.pan_card_path),
+            })
+            result = {
+                "agent": "deepface", "status": "completed",
+                "face_match": face_data.get("verified", False),
+                "confidence": face_data.get("score", 0) or 0,
+                "distance": face_data.get("distance"),
+                "face_status": face_data.get("status"),
+                "aadhaar_number": face_data.get("aadhaar"),
+                "pan_number": face_data.get("pan"),
+            }
+            session.deepface_output = result
+            db.add(session)
+            await db.commit()
+        except Exception as e:
+            print(f"⚠️ Self-heal failed for deepface: {e}")
+
     if not session.transaction_output:
         raise HTTPException(400, "transaction_output missing — wait for bank statement processing.")
+    
+    print(f"✅ Pipeline Guard: All inputs present for {session_id}", flush=True)
 
     # ── Extractor ─────────────────────────────────────────
     if not session.extractor_output:
@@ -223,7 +274,9 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
                 ),
             )
 
-            result           = await asyncio.get_event_loop().run_in_executor(None, calculate_risk, risk_request)
+            # result           = await asyncio.get_event_loop().run_in_executor(None, calculate_risk, risk_request)
+            # CALL DIRECTLY
+            result = calculate_risk(risk_request)
             result["agent"]  = "risk_scorer"
             result["status"] = "completed"
 
@@ -290,7 +343,9 @@ async def run_pipeline(session_id: UUID, db: AsyncSession = Depends(get_db)):
                 ),
             )
 
-            result = await asyncio.get_event_loop().run_in_executor(None, generate_offer, offer_request)
+            # result = await asyncio.get_event_loop().run_in_executor(None, generate_offer, offer_request)
+            # CALL DIRECTLY
+            result = generate_offer(offer_request)
 
             session.offer_output    = result
             session.approved_amount = result.get("approved_amount")

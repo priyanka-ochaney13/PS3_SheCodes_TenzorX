@@ -71,6 +71,55 @@ async def record_consent(session_id: UUID, db: AsyncSession = Depends(get_db)):
 @router.get("/{session_id}", response_model=SessionStatusResponse)
 async def get_session(session_id: UUID, db: AsyncSession = Depends(get_db)):
     session = await get_session_or_404(session_id, db)
+    
+    # ── Self-Heal: Trigger missing agents during polling ──
+    # If transaction is missing but file is there, run it
+    if not session.transaction_output and session.bank_statement_path:
+        from utils.transaction_pipeline import run_transaction_pipeline
+        try:
+            print(f"🔄 Polling-trigger: Running transaction agent for {session_id}...", flush=True)
+            res = run_transaction_pipeline(
+                session.bank_statement_path,
+                session.stated_income or 0,
+                session.loan_type or "personal_loan_salaried",
+                session.pdf_password,
+            )
+            session.transaction_output = res
+            db.add(session)
+            await db.commit()
+        except Exception as e:
+            print(f"⚠️ Polling self-heal failed for transaction: {e}")
+
+    # If deepface is missing but files are there, run it
+    if not session.deepface_output and session.live_frame_path and session.kyc_photo_path:
+        from agents.deepface_agent import process_kyc_logic
+        import base64, os
+        def _enc(p): 
+            if not p or not os.path.exists(p): return None
+            with open(p,"rb") as f: return "data:image/jpeg;base64,"+base64.b64encode(f.read()).decode()
+        try:
+            print(f"🔄 Polling-trigger: Running deepface agent for {session_id}...", flush=True)
+            face_data = await process_kyc_logic({
+                "photo": _enc(session.kyc_photo_path),
+                "image": _enc(session.live_frame_path),
+                "aadhaar": _enc(session.aadhaar_card_path),
+                "pan": _enc(session.pan_card_path),
+            })
+            result = {
+                "agent": "deepface", "status": "completed",
+                "face_match": face_data.get("verified", False),
+                "confidence": face_data.get("score", 0) or 0,
+                "distance": face_data.get("distance"),
+                "face_status": face_data.get("status"),
+                "aadhaar_number": face_data.get("aadhaar"),
+                "pan_number": face_data.get("pan"),
+            }
+            session.deepface_output = result
+            db.add(session)
+            await db.commit()
+        except Exception as e:
+            print(f"⚠️ Polling self-heal failed for deepface: {e}")
+
     completed = [
         a for a in ["speech", "deepface", "transaction", "geo",
                     "extractor", "fraud", "policy", "risk", "offer"]

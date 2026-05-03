@@ -38,9 +38,12 @@ def train():
                                learning_rate=0.1, eval_metric='logloss')
     model.fit(X, y)
 
-    os.makedirs('models', exist_ok=True)
-    joblib.dump(model, 'models/fraud_model.pkl')
-    print("✅ Model trained and saved to models/fraud_model.pkl")
+    # Save directly to the agents directory where scorer expects it
+    base_dir = os.path.dirname(__file__)
+    model_path = os.path.join(base_dir, 'fraud_model.pkl')
+    
+    joblib.dump(model, model_path)
+    print(f"✅ Model trained and saved to {model_path}")
 
 if __name__ == "__main__":
     train()

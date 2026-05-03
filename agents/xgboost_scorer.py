@@ -1,7 +1,23 @@
 import joblib
 import numpy as np
+import os
+
 def score_fraud(features):
-    model = joblib.load('fraud_model.pkl')
+    # Use absolute path to load the model
+    base_dir = os.path.dirname(__file__)
+    model_path = os.path.join(base_dir, 'fraud_model.pkl')
+    
+    try:
+        model = joblib.load(model_path)
+    except Exception as e:
+        print(f"⚠️ Error loading XGBoost model from {model_path}: {e}")
+        # Return a safe fallback if model missing
+        return {
+            "fraud_probability": 0.0,
+            "fraud_signal": False,
+            "weight": 0
+        }
+
     vector = np.array([[
         features['avg_monthly_credit'],
         features['credit_consistency_score'],

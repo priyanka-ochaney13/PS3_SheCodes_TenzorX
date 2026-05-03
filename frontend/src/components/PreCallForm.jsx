@@ -155,7 +155,10 @@ export default function PreCallForm({ user, onStartCall, onBack }) {
       });
 
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to start session. Is the backend running?");
+      console.error("Session creation error:", err);
+      const detail = err.response?.data?.detail;
+      const status = err.response?.status;
+      setError(detail || `Error ${status}: Failed to start session. Verify backend is running on port 8000.`);
     } finally {
       setLoading(false);
       setUploadMsg("");

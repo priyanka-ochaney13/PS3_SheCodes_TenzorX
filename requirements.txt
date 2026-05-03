@@ -27,3 +27,6 @@ PyMuPDF
 fpdf2
 tf-keras
 celery
+supabase
+gotrue
+email-validator

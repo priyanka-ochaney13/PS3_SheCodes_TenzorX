@@ -95,8 +95,12 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
       try {
         setStatusMsg("Requesting camera and microphone...");
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: "user" },
-          audio: { echoCancellation: true, noiseSuppression: true }
+          video: { width: 1280, height: 720, facingMode: "user" },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
         });
         streamRef.current = stream;
         if (videoRef.current) {
@@ -147,12 +151,14 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
     try {
       setAgentSpeaking(true);
       setStatusMsg("Agent thinking...");
+      console.log("🤖 Fetching next AI action...");
 
       const res = await api.post(
         `/agents/speech/${sessionId}/next_action`,
         { turns: currentTurns }
       );
       const { next_action, next_question } = res.data;
+      console.log("🤖 AI Response received:", next_question || next_action);
 
       // LLM says we're done — wrap up
       if (next_action === "COMPLETE_CONVERSATION" || !next_question) {
@@ -180,93 +186,131 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
     }
   }, [sessionId]);
 
-  // ── TTS: ElevenLabs → Web Audio, fallback browser TTS ─
-  const speakText = async (text) => {
-    try {
-      const res = await api.post(
-        `/agents/speech/${sessionId}/speak`,
-        { text },
-        { responseType: "arraybuffer" }
-      );
-      if (res.data && res.data.byteLength > 100) {
-        const ctx    = new (window.AudioContext || window.webkitAudioContext)();
-        const buffer = await ctx.decodeAudioData(res.data);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        await new Promise((resolve) => {
-          source.onended = resolve;
-          source.start(0);
+  // ── TTS: ElevenLabs → Audio Element, fallback browser TTS ─
+  const speakText = (text) =>
+    new Promise(async (resolve) => {
+      try {
+        const res = await api.post(`/agents/speech/${sessionId}/speak`, { text }, {
+          responseType: 'blob'
         });
-        return;
+        const url = URL.createObjectURL(res.data);
+        const audio = new Audio(url);
+        
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+        
+        audio.onerror = (e) => {
+          console.error("❌ Audio playback error:", e);
+          URL.revokeObjectURL(url);
+          fallbackTTS(text, resolve);
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.warn("⚠️ Autoplay blocked, using fallback TTS", err);
+            fallbackTTS(text, resolve);
+          });
+        }
+      } catch (err) {
+        console.warn("⚠️ ElevenLabs request failed, using fallback TTS", err);
+        fallbackTTS(text, resolve);
       }
-    } catch (_) {
-      // ElevenLabs not configured or error — use browser TTS
-    }
-    await new Promise((resolve) => {
-      const utt  = new SpeechSynthesisUtterance(text);
-      utt.rate   = 0.9;
-      utt.lang   = "en-IN";
-      utt.onend  = resolve;
-      utt.onerror = resolve;
-      window.speechSynthesis.speak(utt);
     });
+
+  const fallbackTTS = (text, resolve) => {
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 0.9;
+    utt.lang = "en-IN";
+    utt.onend = () => resolve();
+    utt.onerror = () => resolve();
+    window.speechSynthesis.speak(utt);
   };
+
+  const audioCtxRef = useRef(null);
 
   // ── Record answer (with silence detection) ───────────────
   const recordAnswer = (currentTurns, question) =>
-    new Promise((resolve) => {
+    new Promise(async (resolve) => {
       if (!streamRef.current) { resolve(currentTurns); return; }
-
-      // Verify audio tracks exist
-      const audioTracks = streamRef.current.getAudioTracks();
-      if (!audioTracks || audioTracks.length === 0) {
-        setError("Microphone not available. Please check permissions.");
-        resolve(currentTurns);
-        return;
-      }
-
+      
       setIsRecording(true);
       setTimeLeft(20);
       chunksRef.current = [];
 
-      let recorder;
+      let recorderInstance = null;
       try {
-        recorder = new MediaRecorder(streamRef.current, { mimeType: "audio/webm" });
+        // Ensure audio tracks are healthy
+        const audioTracks = streamRef.current.getAudioTracks();
+        if (audioTracks.length === 0) throw new Error("No audio tracks found.");
+        
+        audioTracks.forEach(t => {
+          if (t.readyState === 'live' && !t.enabled) t.enabled = true;
+        });
+
+        // Clone the stream - often more stable than 'new MediaStream(tracks)'
+        const audioStream = new MediaStream([audioTracks[0].clone()]);
+        
+        // Try creating recorder without options first (most compatible)
+        try {
+          recorderInstance = new MediaRecorder(audioStream);
+          console.log("🎤 Created MediaRecorder with browser defaults");
+        } catch (e1) {
+          console.warn("⚠️ Default MediaRecorder failed, trying with WebM...", e1);
+          recorderInstance = new MediaRecorder(audioStream, { mimeType: 'audio/webm' });
+        }
+        
+        if (recorderInstance.state !== "inactive") {
+          throw new Error(`MediaRecorder state is ${recorderInstance.state}`);
+        }
       } catch (e) {
-        setError("Audio format not supported: " + e.message);
+        console.error("❌ MediaRecorder initialization error:", e);
+        setError("Audio recording not supported: " + e.message);
         setIsRecording(false);
         resolve(currentTurns);
         return;
       }
-      mediaRecorderRef.current = recorder;
+      mediaRecorderRef.current = recorderInstance;
 
-      // Setup silence detection
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // Setup silence detection using a singleton AudioContext
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const audioCtx = audioCtxRef.current;
       const analyser = audioCtx.createAnalyser();
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const source = audioCtx.createMediaStreamSource(streamRef.current);
+      const source = audioCtx.createMediaStreamSource(recorderInstance.stream);
       source.connect(analyser);
 
       let silenceDuration = 0;
       let recordingDuration = 0;
-      const silenceThreshold = 10;
+      const silenceThreshold = 15; // Slightly more sensitive
       const silenceCheckInterval = 100;
-      const requiredSilenceDuration = 2500;
-      const minimumRecordingMs = 2000;
+      const requiredSilenceDuration = 1800; 
+      const minimumRecordingMs = 1500; 
 
       const checkSilence = setInterval(() => {
+        if (!recorderInstance || recorderInstance.state !== "recording") return;
+        
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        
+        if (recordingDuration % 1000 === 0) {
+          console.log(`🔊 Volume: ${average.toFixed(1)} | Data: ${chunksRef.current.length} chunks`);
+        }
+
         recordingDuration += silenceCheckInterval;
         
         if (average < silenceThreshold) {
           silenceDuration += silenceCheckInterval;
           if (silenceDuration >= requiredSilenceDuration && 
-              recordingDuration >= minimumRecordingMs && 
-              recorder.state === "recording") {
+              recordingDuration >= minimumRecordingMs &&
+              chunksRef.current.length > 0) {
+            console.log("🤫 Silence detected, stopping recorder");
             clearInterval(checkSilence);
-            recorder.stop();
+            if (recorderInstance.state === "recording") recorderInstance.stop();
             return;
           }
         } else {
@@ -274,44 +318,63 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
         }
       }, silenceCheckInterval);
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+      recorderInstance.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
 
-      recorder.onstop = async () => {
+      recorderInstance.onstop = async () => {
         clearInterval(checkSilence);
         setIsRecording(false);
         setTimeLeft(null);
         setStatusMsg("Transcribing your answer...");
+        
+        // Cleanup tracks
+        recorderInstance.stream.getTracks().forEach(t => t.stop());
 
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const text = await transcribeAudio(blob, question);
+        const recordedBlob = new Blob(chunksRef.current, { type: recorderInstance.mimeType });
+        console.log(`✅ Recording finished. Total size: ${recordedBlob.size} bytes`);
+
+        let text = "";
+        if (recordedBlob.size < 2000) {
+          console.warn("⚠️ Audio blob too small.");
+          text = "(silence)";
+        } else {
+          text = await transcribeAudio(recordedBlob, question);
+        }
 
         const customerTurn = { role: "customer", text: text || "(no response)" };
         const updated      = [...currentTurns, customerTurn];
         turnsRef.current   = updated;
         setTurns(updated);
-
         resolve(updated);
-
-        // Continue with next question from LLM
         await askNextQuestion(updated);
       };
 
-      recorder.start();
-
-      // Auto-stop countdown (20 seconds)
       let remaining = 20;
       const timer = setInterval(() => {
-        remaining -= 1;
-        setTimeLeft(remaining);
-        if (remaining <= 0) {
-          clearInterval(timer);
-          if (recorder.state === "recording") recorder.stop();
+        if (recorderInstance.state === "recording") {
+          remaining -= 1;
+          setTimeLeft(remaining);
+          if (remaining <= 0) {
+            clearInterval(timer);
+            recorderInstance.stop();
+          }
         }
       }, 1000);
 
-      mediaRecorderRef.current._autoTimer = timer;
+      try {
+        if (audioCtx.state === "suspended") await audioCtx.resume();
+        recorderInstance.start(200); 
+      } catch (err) {
+        console.error("❌ Failed to start MediaRecorder:", err);
+        setError("Microphone error: Could not start recording.");
+        setIsRecording(false);
+        clearInterval(checkSilence);
+        clearInterval(timer);
+        resolve(currentTurns);
+      }
     });
 
   // Manual stop (customer clicks "Done Speaking")
@@ -325,13 +388,23 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
   // ── Groq Whisper transcription ────────────────────────
   const transcribeAudio = async (blob, question) => {
     try {
+      console.log("🛰️ Sending for transcription...", { size: blob.size, type: blob.type });
       const fd = new FormData();
-      fd.append("audio",      blob, "answer.webm");
+      
+      // Determine extension from mime type
+      let ext = "webm";
+      if (blob.type.includes("mp4")) ext = "mp4";
+      else if (blob.type.includes("ogg")) ext = "ogg";
+      else if (blob.type.includes("wav")) ext = "wav";
+
+      fd.append("audio", blob, `recording.${ext}`);
       fd.append("session_id", sessionId);
       fd.append("question",   question);
       const res = await api.post("/agents/transcribe_chunk", fd);
+      console.log("📝 Transcript received:", res.data.transcript);
       return res.data.transcript || "";
-    } catch {
+    } catch (err) {
+      console.error("❌ Transcription error:", err);
       return "";
     }
   };
