@@ -6,6 +6,16 @@ An end-to-end AI-powered loan onboarding system featuring a multi-agent pipeline
 
 [Watch the Demo Video on Google Drive](https://drive.google.com/file/d/1HKknZSH7Yds1v08rpuvu4cqvm_9F-Guk/view?usp=sharing)
 
+## Implementation Screenshots 
+<img width="330" height="330" alt="image" src="https://github.com/user-attachments/assets/46aebd5f-021a-4b26-9956-e268da97d421" />
+<img width="1917" height="961" alt="image" src="https://github.com/user-attachments/assets/dbffbfe2-1903-4ac6-9aea-f16e21ee60cf" />
+<img width="1451" height="898" alt="image" src="https://github.com/user-attachments/assets/9e7c861b-0bdc-4596-b290-5153a571a2a4" />
+<img width="1915" height="966" alt="image" src="https://github.com/user-attachments/assets/ddba2428-b330-47b7-a487-7c410fbc4598" />
+<img width="1918" height="960" alt="image" src="https://github.com/user-attachments/assets/5c5e3f36-98af-4d77-8998-fa3c142ef4d2" />
+<img width="1919" height="973" alt="image" src="https://github.com/user-attachments/assets/7261c4ef-4cec-4ad8-999c-834760654785" />
+<img width="930" height="500" alt="image" src="https://github.com/user-attachments/assets/fd5b9023-0ed5-46e4-bed8-de056c0cb78b" />
+<img width="932" height="496" alt="image" src="https://github.com/user-attachments/assets/72fd4d9c-6ae7-4db1-83f5-cf43e87ba9f3" />
+
 ## Overview
 
 This project automates the complex process of loan origination using a swarm of specialized AI agents. It guides a customer from initial application through document uploads and a live video call, concluding with an instant loan offer or rejection based on real-time risk analysis.
