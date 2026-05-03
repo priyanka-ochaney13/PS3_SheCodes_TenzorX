@@ -236,4 +236,16 @@ async def _run_deepface_background(session_id: UUID):
         except Exception as e:
             print(f"❌ Background deepface error for {session_id}: {e}", flush=True)
             traceback.print_exc()
+            # Set a fallback in background task too
+            try:
+                fallback = {
+                    "agent": "deepface", "status": "failed",
+                    "face_match": False, "confidence": 0.0,
+                    "error": str(e)
+                }
+                session.deepface_output = fallback
+                db.add(session)
+                await db.commit()
+            except:
+                pass
 

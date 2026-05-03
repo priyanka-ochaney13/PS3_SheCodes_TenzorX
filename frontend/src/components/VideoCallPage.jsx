@@ -414,33 +414,58 @@ export default function VideoCallPage({ sessionId, kycAddress, statedIncome, onC
   // Backend auto-triggers /process_kyc_full (deepface microservice)
   // which uses kyc_photo + aadhaar_card + pan_card already uploaded in PreCallForm
   const scheduleFrameCapture = () => {
-    setTimeout(() => captureFrame(), 5000);
+    // Try capturing every 3 seconds until successful or call ends
+    const timer = setInterval(async () => {
+      if (phase !== "active") {
+        clearInterval(timer);
+        return;
+      }
+      const success = await captureFrame();
+      if (success) {
+        console.log("📸 Live frame captured and uploaded successfully");
+        clearInterval(timer);
+      }
+    }, 3000);
   };
 
   const captureFrame = async () => {
-    if (!videoRef.current || !streamRef.current) return;
+    if (!videoRef.current || !streamRef.current) return false;
     const video = videoRef.current;
-    if (!video.readyState || video.readyState < 2) {
-      console.warn("Video not ready, skipping frame capture");
-      return;
+    
+    // Ensure video is actually playing and has dimensions
+    if (!video.readyState || video.readyState < 2 || video.videoWidth === 0) {
+      console.warn("📸 Video not ready for capture yet...");
+      return false;
     }
 
-    const canvas  = document.createElement("canvas");
-    canvas.width  = video.videoWidth  || 640;
-    canvas.height = video.videoHeight || 480;
-    canvas.getContext("2d").drawImage(video, 0, 0);
+    try {
+      const canvas  = document.createElement("canvas");
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
 
-    await new Promise((resolve) => {
-      canvas.toBlob(async (blob) => {
-        try {
-          const fd = new FormData();
-          fd.append("session_id", sessionId);
-          fd.append("file", blob, "live_frame.jpg");
-          await api.post("/documents/upload/live-frame", fd);
-        } catch (_) {}
-        resolve();
-      }, "image/jpeg", 0.92);
-    });
+      return await new Promise((resolve) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            resolve(false);
+            return;
+          }
+          try {
+            const fd = new FormData();
+            fd.append("session_id", sessionId);
+            fd.append("file", blob, "live_frame.jpg");
+            await api.post("/documents/upload/live-frame", fd);
+            resolve(true);
+          } catch (err) {
+            console.error("📸 Frame upload failed:", err);
+            resolve(false);
+          }
+        }, "image/jpeg", 0.90);
+      });
+    } catch (err) {
+      console.error("📸 Canvas capture error:", err);
+      return false;
+    }
   };
 
   // ── Send GPS to geo agent (fire-and-forget) ──────────────

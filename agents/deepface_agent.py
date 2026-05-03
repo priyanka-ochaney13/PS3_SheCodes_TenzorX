@@ -20,7 +20,9 @@ print("🚀 OCR Ready")
 
 # -------- TEMP DIR HELPER (for concurrent request isolation) --------
 def get_tmp_dir():
-    d = f"/tmp/deepface_{_uuid.uuid4().hex}"
+    # Use a cross-platform temp directory
+    import tempfile
+    d = os.path.join(tempfile.gettempdir(), f"deepface_{_uuid.uuid4().hex}")
     os.makedirs(d, exist_ok=True)
     return d
 

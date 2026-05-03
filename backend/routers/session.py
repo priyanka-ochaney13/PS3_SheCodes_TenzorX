@@ -1,4 +1,5 @@
 # routers/session.py
+import asyncio
 from uuid import UUID
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
@@ -91,34 +92,59 @@ async def get_session(session_id: UUID, db: AsyncSession = Depends(get_db)):
             print(f"⚠️ Polling self-heal failed for transaction: {e}")
 
     # If deepface is missing but files are there, run it
-    if not session.deepface_output and session.live_frame_path and session.kyc_photo_path:
-        from agents.deepface_agent import process_kyc_logic
-        import base64, os
-        def _enc(p): 
-            if not p or not os.path.exists(p): return None
-            with open(p,"rb") as f: return "data:image/jpeg;base64,"+base64.b64encode(f.read()).decode()
-        try:
-            print(f"🔄 Polling-trigger: Running deepface agent for {session_id}...", flush=True)
-            face_data = await process_kyc_logic({
-                "photo": _enc(session.kyc_photo_path),
-                "image": _enc(session.live_frame_path),
-                "aadhaar": _enc(session.aadhaar_card_path),
-                "pan": _enc(session.pan_card_path),
-            })
-            result = {
-                "agent": "deepface", "status": "completed",
-                "face_match": face_data.get("verified", False),
-                "confidence": face_data.get("score", 0) or 0,
-                "distance": face_data.get("distance"),
-                "face_status": face_data.get("status"),
-                "aadhaar_number": face_data.get("aadhaar"),
-                "pan_number": face_data.get("pan"),
+    if not session.deepface_output:
+        if session.live_frame_path and session.kyc_photo_path:
+            from agents.deepface_agent import process_kyc_logic
+            import base64, os
+            def _enc(p): 
+                if not p or not os.path.exists(p): return None
+                with open(p,"rb") as f: return "data:image/jpeg;base64,"+base64.b64encode(f.read()).decode()
+            try:
+                print(f"🔄 Polling-trigger: Running deepface agent for {session_id}...", flush=True)
+                # Use a timeout for the deepface logic to prevent hanging the poll
+                face_data = await asyncio.wait_for(process_kyc_logic({
+                    "photo": _enc(session.kyc_photo_path),
+                    "image": _enc(session.live_frame_path),
+                    "aadhaar": _enc(session.aadhaar_card_path),
+                    "pan": _enc(session.pan_card_path),
+                }), timeout=15.0) # 15s timeout for polling self-heal
+                
+                result = {
+                    "agent": "deepface", "status": "completed",
+                    "face_match": face_data.get("verified", False),
+                    "confidence": face_data.get("score", 0) or 0,
+                    "distance": face_data.get("distance"),
+                    "face_status": face_data.get("status"),
+                    "aadhaar_number": face_data.get("aadhaar"),
+                    "pan_number": face_data.get("pan"),
+                }
+                session.deepface_output = result
+                db.add(session)
+                await db.commit()
+            except Exception as e:
+                print(f"⚠️ Polling self-heal failed for deepface: {e}")
+                # IMPORTANT: Set a fallback result so the poll doesn't keep retrying and hanging
+                fallback = {
+                    "agent": "deepface", "status": "failed",
+                    "face_match": False, "confidence": 0.0,
+                    "error": str(e),
+                    "aadhaar_number": "Failed", "pan_number": "Failed"
+                }
+                session.deepface_output = fallback
+                db.add(session)
+                await db.commit()
+        elif session.status == SessionStatus.active and (datetime.utcnow() - session.created_at).total_seconds() > 300:
+            # If we've been in the call for 5+ mins and still no frame, fail it gracefully
+            print(f"⚠️ No live frame captured after 5 mins for {session_id}. Failing deepface agent.")
+            fallback = {
+                "agent": "deepface", "status": "failed",
+                "face_match": False, "confidence": 0.0,
+                "error": "No live frame captured during call",
+                "aadhaar_number": "Not Found", "pan_number": "Not Found"
             }
-            session.deepface_output = result
+            session.deepface_output = fallback
             db.add(session)
             await db.commit()
-        except Exception as e:
-            print(f"⚠️ Polling self-heal failed for deepface: {e}")
 
     completed = [
         a for a in ["speech", "deepface", "transaction", "geo",
