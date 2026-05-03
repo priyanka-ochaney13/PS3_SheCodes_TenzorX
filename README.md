@@ -7,7 +7,7 @@ An end-to-end AI-powered loan onboarding system featuring a multi-agent pipeline
 [Watch the Demo Video on Google Drive](https://drive.google.com/file/d/1HKknZSH7Yds1v08rpuvu4cqvm_9F-Guk/view?usp=sharing)
 
 ## Implementation Screenshots 
-<img width="330" height="330" alt="image" src="https://github.com/user-attachments/assets/46aebd5f-021a-4b26-9956-e268da97d421" />
+<img width="1919" height="969" alt="image" src="https://github.com/user-attachments/assets/87b05bb3-5e24-4513-aed5-fa484f316100" />
 <img width="1917" height="961" alt="image" src="https://github.com/user-attachments/assets/dbffbfe2-1903-4ac6-9aea-f16e21ee60cf" />
 <img width="1451" height="898" alt="image" src="https://github.com/user-attachments/assets/9e7c861b-0bdc-4596-b290-5153a571a2a4" />
 <img width="1915" height="966" alt="image" src="https://github.com/user-attachments/assets/ddba2428-b330-47b7-a487-7c410fbc4598" />
