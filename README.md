@@ -22,7 +22,7 @@ This project automates the complex process of loan origination using a swarm of 
 
 ## 🤖 AI Agent Swarm
 
-The system uses 10+ specialized agents working in parallel:
+The system uses 9 specialized agents working in parallel:
 
 - **Speech Agent**: Handles real-time TTS (ElevenLabs) and STT (Groq/Whisper) during video calls.
 - **DeepFace Agent**: Performs face verification (matching live video to KYC photo) and OCR on Aadhaar/PAN cards.
